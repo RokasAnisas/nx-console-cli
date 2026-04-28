@@ -38,5 +38,7 @@ export function savePreferences(workspaceRoot: string, preferences: Preferences)
 }
 
 function isValidMode(m: unknown): m is DashMode {
-  return m === "tree" || m === "flat" || m === "favourites" || m === "modified";
+  return (
+    m === "tree" || m === "flat" || m === "favourites" || m === "modified" || m === "recent"
+  );
 }

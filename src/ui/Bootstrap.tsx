@@ -15,7 +15,9 @@ interface Props {
   version: string;
   initialMode: DashMode;
   initialFavourites: Set<string>;
+  initialRecent: string[];
   onFavouritesChange: (favourites: Set<string>) => void;
+  onRecentChange: (recent: string[]) => void;
   onModeChange: (mode: DashMode) => void;
   onSelect: (selection: Selection) => void;
 }
@@ -125,7 +127,9 @@ export function Bootstrap(props: Props) {
       version={props.version}
       initialMode={props.initialMode}
       initialFavourites={props.initialFavourites}
+      initialRecent={props.initialRecent}
       onFavouritesChange={props.onFavouritesChange}
+      onRecentChange={props.onRecentChange}
       onModeChange={props.onModeChange}
       onSelect={props.onSelect}
     />

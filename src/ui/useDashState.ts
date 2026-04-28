@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Fzf, type FzfResultItem } from "fzf";
 
+import { MAX_RECENT } from "../recent/store.js";
 import { selectionKey, type Project, type Selection } from "../types.js";
 
-export type DashMode = "tree" | "flat" | "favourites" | "modified";
+export type DashMode = "tree" | "flat" | "favourites" | "modified" | "recent";
 
-const MODE_ORDER: DashMode[] = ["tree", "flat", "favourites", "modified"];
+const MODE_ORDER: DashMode[] = ["tree", "flat", "favourites", "modified", "recent"];
 const EMPTY_AFFECTED: Set<string> = new Set();
+const EMPTY_RECENT: string[] = [];
 
 export interface VisibleItem {
   id: string;
@@ -29,6 +31,7 @@ export interface DashState {
   items: VisibleItem[];
   favouritesEmpty: boolean;
   modifiedEmpty: boolean;
+  recentEmpty: boolean;
   toggleMode: (direction?: 1 | -1) => void;
   setQuery: (q: string) => void;
   appendToQuery: (s: string) => void;
@@ -42,13 +45,16 @@ export interface DashState {
   expandSelected: () => void;
   collapseSelected: () => void;
   toggleFavouriteSelected: () => void;
+  recordRecentSelected: () => void;
 }
 
 interface UseDashStateOptions {
   initialMode?: DashMode;
   initialFavourites?: Set<string>;
+  initialRecent?: string[];
   affected?: Set<string>;
   onFavouritesChange?: (favourites: Set<string>) => void;
+  onRecentChange?: (recent: string[]) => void;
   onModeChange?: (mode: DashMode) => void;
 }
 
@@ -61,6 +67,9 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
   const [favourites, setFavourites] = useState<Set<string>>(
     () => new Set(options.initialFavourites ?? []),
   );
+  const [recent, setRecent] = useState<string[]>(
+    () => (options.initialRecent ?? EMPTY_RECENT).slice(0, MAX_RECENT),
+  );
 
   const effectiveMode: DashMode | "search" = query.length > 0 ? "search" : mode;
 
@@ -68,9 +77,10 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
     if (query.length > 0) return buildSearchItems(projects, query, favourites, affected);
     if (mode === "favourites") return buildFavouriteItems(projects, favourites, affected);
     if (mode === "modified") return buildModifiedItems(projects, expanded, favourites, affected);
+    if (mode === "recent") return buildRecentItems(projects, favourites, affected, recent);
     if (mode === "flat") return buildFlatItems(projects, favourites, affected);
     return buildTreeItems(projects, expanded, favourites, affected);
-  }, [projects, mode, query, expanded, favourites, affected]);
+  }, [projects, mode, query, expanded, favourites, affected, recent]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -105,6 +115,18 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
     [onFavChange],
   );
 
+  const onRecentChange = options.onRecentChange;
+  const recordRecent = useCallback(
+    (key: string) => {
+      setRecent((prev) => {
+        const next = [key, ...prev.filter((k) => k !== key)].slice(0, MAX_RECENT);
+        onRecentChange?.(next);
+        return next;
+      });
+    },
+    [onRecentChange],
+  );
+
   const onModeChange = options.onModeChange;
   const cycleMode = useCallback(
     (direction: 1 | -1 = 1) => {
@@ -129,6 +151,7 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
     items,
     favouritesEmpty: favourites.size === 0,
     modifiedEmpty: affected.size === 0,
+    recentEmpty: recent.length === 0,
     toggleMode: cycleMode,
     setQuery,
     appendToQuery: (s) => setQuery((q) => q + s),
@@ -152,6 +175,11 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
     toggleFavouriteSelected: () => {
       if (currentItem && currentItem.selection) {
         toggleFavourite(selectionKey(currentItem.selection));
+      }
+    },
+    recordRecentSelected: () => {
+      if (currentItem && currentItem.selection) {
+        recordRecent(selectionKey(currentItem.selection));
       }
     },
   };
@@ -284,6 +312,26 @@ function buildFavouriteItems(
   }
   const result: VisibleItem[] = [];
   for (const key of favourites) {
+    const item = byKey.get(key);
+    if (item) result.push(item);
+  }
+  return result;
+}
+
+function buildRecentItems(
+  projects: Project[],
+  favourites: Set<string>,
+  affected: Set<string>,
+  recent: string[],
+): VisibleItem[] {
+  if (recent.length === 0) return [];
+  const flat = buildFlatItems(projects, favourites, affected);
+  const byKey = new Map<string, VisibleItem>();
+  for (const item of flat) {
+    if (item.selection) byKey.set(selectionKey(item.selection), item);
+  }
+  const result: VisibleItem[] = [];
+  for (const key of recent) {
     const item = byKey.get(key);
     if (item) result.push(item);
   }

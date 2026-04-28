@@ -21,7 +21,9 @@ interface Props {
   version: string;
   initialMode: DashMode;
   initialFavourites: Set<string>;
+  initialRecent: string[];
   onFavouritesChange: (favourites: Set<string>) => void;
+  onRecentChange: (recent: string[]) => void;
   onModeChange: (mode: DashMode) => void;
   onSelect: (selection: Selection) => void;
 }
@@ -41,7 +43,9 @@ export function App({
   version,
   initialMode,
   initialFavourites,
+  initialRecent,
   onFavouritesChange,
+  onRecentChange,
   onModeChange,
   onSelect,
 }: Props) {
@@ -50,11 +54,22 @@ export function App({
   const state = useDashState(projects, {
     initialMode,
     initialFavourites,
+    initialRecent,
     affected,
     onFavouritesChange,
+    onRecentChange,
     onModeChange,
   });
-  const { items, selectedIndex, effectiveMode, query, mode, favouritesEmpty, modifiedEmpty } = state;
+  const {
+    items,
+    selectedIndex,
+    effectiveMode,
+    query,
+    mode,
+    favouritesEmpty,
+    modifiedEmpty,
+    recentEmpty,
+  } = state;
 
   const rows = stdout?.rows ?? 24;
   const cols = stdout?.columns ?? 80;
@@ -107,7 +122,10 @@ export function App({
         state.toggleExpand(item.id);
         return;
       }
-      if (item.selection) onSelect(item.selection);
+      if (item.selection) {
+        state.recordRecentSelected();
+        onSelect(item.selection);
+      }
       return;
     }
     if (key.rightArrow) {
@@ -130,6 +148,7 @@ export function App({
 
   const showEmptyFavouritesHint = mode === "favourites" && !query && favouritesEmpty;
   const showEmptyModifiedHint = mode === "modified" && !query && modifiedEmpty;
+  const showEmptyRecentHint = mode === "recent" && !query && recentEmpty;
 
   return (
     <Box flexDirection="column">
@@ -169,6 +188,14 @@ export function App({
             <Text color="gray" dimColor>
               Edit a file in a project, or check that <Text color="cyan">nx</Text> supports{" "}
               <Text color="cyan">show projects --affected</Text>.
+            </Text>
+          </Box>
+        ) : showEmptyRecentHint ? (
+          <Box flexDirection="column">
+            <Text color="green">↻ No recent runs.</Text>
+            <Text color="gray" dimColor>
+              Press <Text color="cyan">Enter</Text> on a target to record it. Up to{" "}
+              <Text color="cyan">5</Text> recent targets are kept.
             </Text>
           </Box>
         ) : items.length === 0 ? (

@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { loadFavourites, saveFavourites, favouritesDir } from "../favourites/store.js";
 import { loadPreferences, savePreferences } from "../preferences/store.js";
 import { loadCachedProjects, saveCachedProjects } from "../cache/projectsCache.js";
+import { loadRecent, saveRecent, MAX_RECENT } from "../recent/store.js";
 
 function ok(cond: boolean, label: string): void {
   if (!cond) {
@@ -54,6 +55,20 @@ try {
 
   savePreferences(root, { lastMode: "modified" });
   ok(loadPreferences(root).lastMode === "modified", "preferences round-trip modified");
+
+  savePreferences(root, { lastMode: "recent" });
+  ok(loadPreferences(root).lastMode === "recent", "preferences round-trip recent");
+
+  // Recent round-trip
+  ok(loadRecent(root).length === 0, "fresh recent returns empty array");
+  saveRecent(root, ["web:build", "api:serve:prod", "ui:test"]);
+  const reloadedRecent = loadRecent(root);
+  ok(reloadedRecent.length === 3, "recent reloaded with 3 entries");
+  ok(reloadedRecent[0] === "web:build", "recent preserves MRU order");
+
+  // Recent caps at MAX_RECENT
+  saveRecent(root, ["a", "b", "c", "d", "e", "f", "g"]);
+  ok(loadRecent(root).length === MAX_RECENT, `recent capped at ${MAX_RECENT}`);
 
   // Tampering — invalid mode falls back to default
   const prefsPath = join(dir, "preferences.json");

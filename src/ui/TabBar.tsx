@@ -14,6 +14,7 @@ const TABS: ReadonlyArray<Tab> = [
   { mode: "flat", label: "flat", color: "blue" },
   { mode: "favourites", label: "★ favorite", color: "yellow" },
   { mode: "modified", label: "● modified", color: "cyanBright" },
+  { mode: "recent", label: "↻ recent", color: "green" },
 ];
 
 interface Props {
