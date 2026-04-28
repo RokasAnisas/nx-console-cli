@@ -18,9 +18,7 @@ export function loadRecent(workspaceRoot: string): string[] {
   try {
     const json = JSON.parse(readFileSync(path, "utf8")) as Partial<RecentFile>;
     if (Array.isArray(json.items)) {
-      return json.items
-        .filter((x): x is string => typeof x === "string")
-        .slice(0, MAX_RECENT);
+      return json.items.filter((x): x is string => typeof x === "string").slice(0, MAX_RECENT);
     }
   } catch {
     // corrupt — start fresh

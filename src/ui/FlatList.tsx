@@ -37,7 +37,11 @@ function FlatRow({ item, isSelected }: { item: VisibleItem; isSelected: boolean 
     <Box>
       <Text inverse={isSelected}>
         <Text color="gray">{glyph} </Text>
-        {positions ? <Highlighted text={item.label} positions={positions} /> : <Text>{item.label}</Text>}
+        {positions ? (
+          <Highlighted text={item.label} positions={positions} />
+        ) : (
+          <Text>{item.label}</Text>
+        )}
         {item.isFavourite && <Text color="yellow"> ★</Text>}
         {item.isModified && <Text color="cyanBright"> ●</Text>}
       </Text>

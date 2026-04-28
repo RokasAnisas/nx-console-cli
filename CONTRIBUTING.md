@@ -17,13 +17,13 @@ yarn install
 
 ## Scripts
 
-| Script           | What it does                                                          |
-| ---------------- | --------------------------------------------------------------------- |
-| `yarn build`     | Bundle the CLI to `dist/cli.js` via [tsup](https://tsup.egoist.dev)   |
-| `yarn dev`       | `tsup --watch` for fast iteration                                     |
-| `yarn typecheck` | `tsc --noEmit`                                                        |
-| `yarn test`      | Smoke test the favourites / preferences / projects cache stores       |
-| `yarn start`     | Run the bundled CLI (`node dist/cli.js`)                              |
+| Script           | What it does                                                        |
+| ---------------- | ------------------------------------------------------------------- |
+| `yarn build`     | Bundle the CLI to `dist/cli.js` via [tsup](https://tsup.egoist.dev) |
+| `yarn dev`       | `tsup --watch` for fast iteration                                   |
+| `yarn typecheck` | `tsc --noEmit`                                                      |
+| `yarn test`      | Smoke test the favourites / preferences / projects cache stores     |
+| `yarn start`     | Run the bundled CLI (`node dist/cli.js`)                            |
 
 ## Manual testing
 
@@ -92,7 +92,7 @@ To release a new version:
 2. On GitHub, **Create a new Release** from the pushed tag (`Releases → Draft a new release`). The tag name may be either `0.1.2` or `v0.1.2`.
 3. Publishing the release triggers the workflow, which verifies the tag matches `package.json#version` and runs `npm publish --access public` (with provenance attestations generated automatically).
 
-You can also trigger the workflow manually via *Actions → Publish → Run workflow*.
+You can also trigger the workflow manually via _Actions → Publish → Run workflow_.
 
 ## Filing issues / PRs
 

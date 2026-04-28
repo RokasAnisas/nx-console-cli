@@ -58,26 +58,26 @@ That's it — run `nx-dash` anywhere inside an NX monorepo. Navigate with arrows
 
 ## Keybindings
 
-| Key             | Action                                        |
-| --------------- | --------------------------------------------- |
-| `↑` `↓`         | Move selection                                |
-| `Shift` + `↑/↓` | Skip 5 items at a time                        |
-| `←` `→`         | Collapse / expand                             |
-| `Enter`         | Run selected target (or expand a project)     |
-| `Tab`           | Cycle view: tree → flat → ★ favourites        |
-| `Shift` + `→`   | Toggle ★ favourite on the selected target     |
-| *type*          | Fuzzy filter (auto-switches to ranked list)   |
-| `Esc`           | Clear filter, then quit                       |
-| `Ctrl` + `C`    | Quit                                          |
+| Key             | Action                                      |
+| --------------- | ------------------------------------------- |
+| `↑` `↓`         | Move selection                              |
+| `Shift` + `↑/↓` | Skip 5 items at a time                      |
+| `←` `→`         | Collapse / expand                           |
+| `Enter`         | Run selected target (or expand a project)   |
+| `Tab`           | Cycle view: tree → flat → ★ favourites      |
+| `Shift` + `→`   | Toggle ★ favourite on the selected target   |
+| _type_          | Fuzzy filter (auto-switches to ranked list) |
+| `Esc`           | Clear filter, then quit                     |
+| `Ctrl` + `C`    | Quit                                        |
 
 ## Flags
 
-| Flag                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `--cwd <path>`      | Pretend the CLI was launched from `<path>`                   |
-| `--dry-run`         | Print the resolved `nx run …` command instead of executing  |
-| `-h`, `--help`      | Show help                                                    |
-| `-v`, `--version`   | Print version                                                |
+| Flag              | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `--cwd <path>`    | Pretend the CLI was launched from `<path>`                 |
+| `--dry-run`       | Print the resolved `nx run …` command instead of executing |
+| `-h`, `--help`    | Show help                                                  |
+| `-v`, `--version` | Print version                                              |
 
 ## How it works
 

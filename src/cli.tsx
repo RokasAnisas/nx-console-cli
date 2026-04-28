@@ -168,9 +168,7 @@ async function main() {
         try {
           saveRecent(workspaceRoot, recent);
         } catch (err) {
-          process.stderr.write(
-            `nx-dash: failed to persist recent: ${(err as Error).message}\n`,
-          );
+          process.stderr.write(`nx-dash: failed to persist recent: ${(err as Error).message}\n`);
         }
       }}
       onModeChange={(mode) => {

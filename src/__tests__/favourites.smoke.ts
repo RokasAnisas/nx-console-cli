@@ -90,8 +90,14 @@ try {
   ok(cached !== null, "cache loads after save");
   ok(cached!.source === "nx", "cache preserves source");
   ok(cached!.projects.length === 2, "cache preserves 2 projects");
-  ok(cached!.projects[0]!.name === "web" && cached!.projects[1]!.name === "api", "cache preserves project order");
-  ok(typeof cached!.savedAt === "string" && cached!.savedAt.length > 0, "cache records savedAt timestamp");
+  ok(
+    cached!.projects[0]!.name === "web" && cached!.projects[1]!.name === "api",
+    "cache preserves project order",
+  );
+  ok(
+    typeof cached!.savedAt === "string" && cached!.savedAt.length > 0,
+    "cache records savedAt timestamp",
+  );
 
   // Tampered cache (wrong version) → returns null instead of crashing
   const cachePath = join(dir, "projects-cache.json");

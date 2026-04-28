@@ -67,8 +67,8 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
   const [favourites, setFavourites] = useState<Set<string>>(
     () => new Set(options.initialFavourites ?? []),
   );
-  const [recent, setRecent] = useState<string[]>(
-    () => (options.initialRecent ?? EMPTY_RECENT).slice(0, MAX_RECENT),
+  const [recent, setRecent] = useState<string[]>(() =>
+    (options.initialRecent ?? EMPTY_RECENT).slice(0, MAX_RECENT),
   );
 
   const effectiveMode: DashMode | "search" = query.length > 0 ? "search" : mode;
