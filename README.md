@@ -1,80 +1,113 @@
 # nx-dash
 
-Terminal UI for browsing and running [NX](https://nx.dev) targets — like NX Console for the CLI.
+[![npm version](https://img.shields.io/npm/v/nx-dash.svg?label=npm&color=cb3837)](https://www.npmjs.com/package/nx-dash)
+[![npm downloads](https://img.shields.io/npm/dm/nx-dash.svg?color=cb3837)](https://www.npmjs.com/package/nx-dash)
+[![license](https://img.shields.io/npm/l/nx-dash.svg?color=blue)](LICENSE)
+
+> A terminal UI for browsing and running [NX](https://nx.dev) targets — like NX Console, for the CLI.
 
 ```
-$ npx nx-dash
+███╗   ██╗██╗  ██╗      ██████╗  █████╗ ███████╗██╗  ██╗
+████╗  ██║╚██╗██╔╝      ██╔══██╗██╔══██╗██╔════╝██║  ██║
+██╔██╗ ██║ ╚███╔╝ █████╗██║  ██║███████║███████╗███████║
+██║╚██╗██║ ██╔██╗ ╚════╝██║  ██║██╔══██║╚════██║██╔══██║
+██║ ╚████║██╔╝ ██╗      ██████╔╝██║  ██║███████║██║  ██║
+╚═╝  ╚═══╝╚═╝  ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+                                    terminal nx console
 
-nx-dash · 12 projects · via nx show · /path/to/workspace
-tree › type to filter…
-▾ web
-  ▸ build
-  • dev
-  • lint
-  • test
-▸ api
-▸ shared
-↑↓ navigate · ←→ collapse/expand · Enter run · Tab tree/flat · Esc clear · Ctrl-C quit
+↑↓ navigate  ←→ expand  Enter run  Tab tree/flat/★  ⇧→ favourite  type filter  Esc clear  ^C quit
+
+26 projects · via nx show · ~/projects/my-monorepo
+tree › █ type to filter…
+
+▾ apps
+  ▾ calnote-landing
+    ▸ build ★
+    • dev
+    • lint
+    • test
+  ▸ calnote-web-app
+▸ libs
 ```
 
-## Install
+## Why
+
+[NX Console](https://nx.dev/getting-started/editor-setup) is wonderful inside VS Code and JetBrains, but if you live in the terminal you're stuck with `nx run …`, shell completions, and remembering every target name. **nx-dash** gives you the same project tree, fuzzy filter, and one-keystroke run — right in the shell, no editor required.
+
+## Features
+
+- 🌳 **Tree** of projects → targets → configurations, just like NX Console.
+- 🔍 **Fuzzy filter** — start typing; matches are ranked and highlighted.
+- ⭐ **Favourites** — star the targets you run all day; persists per workspace.
+- ⚡ **Instant restart** — first launch caches the project list; subsequent launches render in milliseconds while a fresh scan runs in the background.
+- 🎯 **Clean handoff** — the TUI fully vanishes on `Enter`; the selected target runs in the original terminal with full stdio and signal forwarding.
+- 🧠 **Remembers** the last view mode (tree / flat / favourites) per workspace.
+- 🪶 **Zero config** — walks up to find `nx.json`, prefers the local `nx` binary, falls back to scanning `project.json` files.
+
+## Quick start
 
 ```sh
-# global
-npm i -g nx-dash
-
-# or one-off
+# Run without installing
 npx nx-dash
+
+# Or install globally
+npm install -g nx-dash
 ```
 
-## Usage
+That's it — run `nx-dash` anywhere inside an NX monorepo. Navigate with arrows, type to filter, hit `Enter` to run.
 
-Run `nx-dash` (or `npx nx-dash`) anywhere inside an NX monorepo. It walks up to find `nx.json`, lists projects → targets → configurations, and on Enter unmounts the UI and runs `nx run <project>:<target>[:<config>]` in the same terminal — exit code, stdio, and signals all forwarded.
+## Keybindings
 
-### Keys
+| Key            | Action                                        |
+| -------------- | --------------------------------------------- |
+| `↑` `↓`        | Move selection                                |
+| `←` `→`        | Collapse / expand                             |
+| `Enter`        | Run selected target (or expand a project)     |
+| `Tab`          | Cycle view: tree → flat → ★ favourites        |
+| `Shift` + `→`  | Toggle ★ favourite on the selected target     |
+| *type*         | Fuzzy filter (auto-switches to ranked list)   |
+| `Esc`          | Clear filter, then quit                       |
+| `Ctrl` + `C`   | Quit                                          |
 
-| Key         | Action                                              |
-| ----------- | --------------------------------------------------- |
-| `↑` / `↓`   | Move selection                                      |
-| `←` / `→`   | Collapse / expand the selected node                 |
-| `Enter`     | Run selected target (or expand selected project)    |
-| `Tab`       | Cycle modes: tree → flat → ★ favourites             |
-| `Shift` + `→` | Toggle ★ favourite on the selected target/config  |
-| type        | Filter — auto-switches to ranked flat mode          |
-| `Esc`       | Clear filter, then quit                             |
-| `Ctrl-C`    | Quit                                                |
+## Flags
 
-### Favourites
+| Flag                | Description                                                  |
+| ------------------- | ------------------------------------------------------------ |
+| `--cwd <path>`      | Pretend the CLI was launched from `<path>`                   |
+| `--dry-run`         | Print the resolved `nx run …` command instead of executing  |
+| `-h`, `--help`      | Show help                                                    |
+| `-v`, `--version`   | Print version                                                |
 
-Press `Shift+→` on any target or configuration to mark it as a favourite. Press `Tab` until the prompt shows `★ favs` to view them. Favourites are stored at `<workspace>/.nx-dash/favourites.json`; the directory ships its own `.gitignore` so nothing leaks into your commits.
+## How it works
 
-### Remembered view
+`nx-dash` walks up from the current directory looking for `nx.json`, then:
 
-`nx-dash` also remembers the last view mode (tree / flat / ★ favs) per workspace and reopens directly in that mode. Stored alongside favourites at `<workspace>/.nx-dash/preferences.json`.
+1. Runs `nx show projects --json` (using the workspace's local `node_modules/.bin/nx` when present) followed by `nx show project <name> --json` per project. This picks up **inferred targets** from plugins like `@nx/vite` or `@nx/jest`.
+2. Falls back to globbing `project.json` files if `nx` isn't installed or the daemon doesn't respond.
 
-### Project cache
+On every successful scan the result is cached. The next launch reads the cache synchronously and renders instantly, while a fresh scan runs in the background and silently swaps in the new data when ready (a small `⠋ refreshing…` indicator shows while it's in flight).
 
-The first launch in a workspace runs a full `nx show` scan (a few seconds on large monorepos). The result is written to `<workspace>/.nx-dash/projects-cache.json` and reused on subsequent launches: the UI renders instantly with the cached tree, while a fresh scan runs in the background and silently replaces the data when it returns. A small `⠋ refreshing…` indicator shows while the background scan is in flight.
+## Workspace state
 
-### Flags
+All per-workspace state lives under a `.nx-dash/` directory at the workspace root. The directory ships its own `.gitignore` so nothing leaks into your commits:
 
 ```
-nx-dash [--cwd <path>] [--dry-run] [--help] [--version]
+<workspace>/.nx-dash/
+├── .gitignore           # contains: *
+├── favourites.json      # your starred targets
+├── preferences.json     # last-used view mode
+└── projects-cache.json  # cached project list
 ```
 
-- `--cwd <path>` — pretend the CLI was launched from `<path>`.
-- `--dry-run` — print the resolved `nx run …` command instead of executing it.
+## Requirements
 
-## How it discovers projects
+- Node.js ≥ 18
+- A workspace containing an `nx.json` file
 
-Primary path: `nx show projects --json` then `nx show project <name> --json` per project, using the workspace's local `node_modules/.bin/nx` when available. This picks up project.json projects, package.json `nx` fields, and inferred targets from NX plugins.
+## License
 
-Fallback: when `nx` isn't installed or the call fails, it globs every `project.json` under the workspace and parses targets/configurations directly. A one-line warning is printed.
+[MIT](LICENSE) © Rokas Anisas
 
-## Develop
+## Contributing
 
-```sh
-yarn install
-yarn build
-node dist/cli.js --cwd src/__fixtures__/tiny-workspace --dry-run
-```
+Bug reports, feature ideas, and pull requests welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup and project layout.
