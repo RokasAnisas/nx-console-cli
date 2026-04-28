@@ -2,6 +2,8 @@
   "name": "nx-console-cli",
   "version": "0.1.0",
   "description": "Terminal UI for browsing and running NX targets, like NX Console for the CLI.",
+  "license": "MIT",
+  "author": "Rokas Anisas",
   "type": "module",
   "bin": {
     "nx-dash": "./dist/cli.js"
