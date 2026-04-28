@@ -28,6 +28,7 @@ const COMPACT_HEADER_ROWS = 6;
 const FULL_HEADER_ROWS_WIDE = 12;
 const FULL_HEADER_ROWS_NARROW = 13;
 const SHORTCUTS_NO_WRAP_WIDTH = 100;
+const SKIP_STEP = 5;
 
 export function App({
   projects,
@@ -84,11 +85,13 @@ export function App({
       return;
     }
     if (key.upArrow) {
-      state.moveUp();
+      if (key.shift) state.pageUp(SKIP_STEP);
+      else state.moveUp();
       return;
     }
     if (key.downArrow) {
-      state.moveDown();
+      if (key.shift) state.pageDown(SKIP_STEP);
+      else state.moveDown();
       return;
     }
     if (key.pageUp) {

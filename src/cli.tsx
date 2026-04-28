@@ -67,6 +67,7 @@ function printHelp() {
       "",
       "KEYS",
       "  ↑/↓        Move selection",
+      "  Shift+↑/↓  Skip 5 items at a time",
       "  ←/→        Collapse / expand",
       "  Enter      Run selected target (or expand selected project)",
       "  Tab        Cycle tree / flat / ★ favourites",

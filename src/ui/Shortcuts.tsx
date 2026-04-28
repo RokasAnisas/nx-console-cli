@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 
 const SHORTCUTS: ReadonlyArray<{ key: string; label: string }> = [
   { key: "↑↓", label: "navigate" },
+  { key: "⇧↑↓", label: "skip" },
   { key: "←→", label: "expand" },
   { key: "Enter", label: "run" },
   { key: "Tab", label: "tree/flat/★" },
@@ -14,6 +15,7 @@ const SHORTCUTS: ReadonlyArray<{ key: string; label: string }> = [
 
 const COMPACT: ReadonlyArray<{ key: string; label: string }> = [
   { key: "↑↓", label: "nav" },
+  { key: "⇧↑↓", label: "skip" },
   { key: "↵", label: "run" },
   { key: "⇥", label: "mode" },
   { key: "⇧→", label: "★" },
