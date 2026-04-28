@@ -1,4 +1,37 @@
 {
-  "name": "nx-console-cli",
+  "name": "nx-dash",
+  "version": "0.1.1",
+  "description": "Terminal UI for browsing and running NX targets, like NX Console for the CLI.",
+  "license": "MIT",
+  "author": "Rokas Anisas",
+  "type": "module",
+  "bin": "./dist/cli.js",
+  "main": "./dist/cli.js",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/cli.js",
+    "typecheck": "tsc --noEmit",
+    "test": "tsup src/__tests__/favourites.smoke.ts --format esm --target node18 --out-dir dist-test --silent --shims && node dist-test/favourites.smoke.js"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "fzf": "^0.5.2",
+    "ink": "^5.0.1",
+    "react": "^18.3.1",
+    "tinyglobby": "^0.2.10"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.2"
+  },
   "packageManager": "yarn@4.14.1"
 }
