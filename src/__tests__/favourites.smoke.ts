@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import { loadFavourites, saveFavourites, favouritesDir } from "../favourites/store.js";
 import { loadPreferences, savePreferences } from "../preferences/store.js";
+import { loadCachedProjects, saveCachedProjects } from "../cache/projectsCache.js";
 
 function ok(cond: boolean, label: string): void {
   if (!cond) {
@@ -58,6 +59,26 @@ try {
 
   // Both stores share the single .gitignore — no duplicates
   ok(existsSync(join(dir, ".gitignore")), ".gitignore still present after preferences write");
+
+  // Projects cache round-trip
+  ok(loadCachedProjects(root) === null, "missing projects cache returns null");
+
+  saveCachedProjects(root, "nx", [
+    { name: "web", root: "apps/web", targets: [{ name: "build", configurations: [] }] },
+    { name: "api", root: "apps/api", targets: [] },
+  ]);
+
+  const cached = loadCachedProjects(root);
+  ok(cached !== null, "cache loads after save");
+  ok(cached!.source === "nx", "cache preserves source");
+  ok(cached!.projects.length === 2, "cache preserves 2 projects");
+  ok(cached!.projects[0]!.name === "web" && cached!.projects[1]!.name === "api", "cache preserves project order");
+  ok(typeof cached!.savedAt === "string" && cached!.savedAt.length > 0, "cache records savedAt timestamp");
+
+  // Tampered cache (wrong version) → returns null instead of crashing
+  const cachePath = join(dir, "projects-cache.json");
+  require("node:fs").writeFileSync(cachePath, JSON.stringify({ version: 99, projects: [] }));
+  ok(loadCachedProjects(root) === null, "incompatible cache version returns null");
 
   process.stdout.write("all storage smoke tests passed\n");
 } finally {

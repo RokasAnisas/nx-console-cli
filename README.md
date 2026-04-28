@@ -52,6 +52,10 @@ Press `Shift+→` on any target or configuration to mark it as a favourite. Pres
 
 `nx-dash` also remembers the last view mode (tree / flat / ★ favs) per workspace and reopens directly in that mode. Stored alongside favourites at `<workspace>/.nx-dash/preferences.json`.
 
+### Project cache
+
+The first launch in a workspace runs a full `nx show` scan (a few seconds on large monorepos). The result is written to `<workspace>/.nx-dash/projects-cache.json` and reused on subsequent launches: the UI renders instantly with the cached tree, while a fresh scan runs in the background and silently replaces the data when it returns. A small `⠋ refreshing…` indicator shows while the background scan is in flight.
+
 ### Flags
 
 ```

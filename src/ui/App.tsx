@@ -7,12 +7,14 @@ import { TreeView } from "./TreeView.js";
 import { FlatList } from "./FlatList.js";
 import { Logo } from "./Logo.js";
 import { Shortcuts } from "./Shortcuts.js";
+import { useSpinnerFrame } from "./useSpinnerFrame.js";
 import type { Project, Selection } from "../types.js";
 
 interface Props {
   projects: Project[];
   source: "nx" | "glob";
   warning?: string;
+  refreshing?: boolean;
   workspaceRoot: string;
   version: string;
   initialMode: DashMode;
@@ -31,6 +33,7 @@ export function App({
   projects,
   source,
   warning,
+  refreshing,
   workspaceRoot,
   version,
   initialMode,
@@ -142,6 +145,7 @@ export function App({
           projectCount={projects.length}
           source={source}
           workspaceRoot={workspaceRoot}
+          refreshing={refreshing}
         />
       </Box>
       <SearchInput query={query} mode={effectiveMode} />
@@ -172,10 +176,12 @@ function InfoLine({
   projectCount,
   source,
   workspaceRoot,
+  refreshing,
 }: {
   projectCount: number;
   source: "nx" | "glob";
   workspaceRoot: string;
+  refreshing?: boolean;
 }) {
   return (
     <Box>
@@ -192,7 +198,25 @@ function InfoLine({
       <Text color="gray" dimColor>
         {workspaceRoot}
       </Text>
+      {refreshing && <RefreshIndicator />}
     </Box>
+  );
+}
+
+function RefreshIndicator() {
+  const frame = useSpinnerFrame();
+  return (
+    <>
+      <Text color="gray" dimColor>
+        {" "}
+        ·{" "}
+      </Text>
+      <Text color="cyan">{frame}</Text>
+      <Text color="gray" dimColor>
+        {" "}
+        refreshing…
+      </Text>
+    </>
   );
 }
 
