@@ -60,16 +60,7 @@ export function App({
     onRecentChange,
     onModeChange,
   });
-  const {
-    items,
-    selectedIndex,
-    effectiveMode,
-    query,
-    mode,
-    favouritesEmpty,
-    modifiedEmpty,
-    recentEmpty,
-  } = state;
+  const { items, selectedIndex, effectiveMode, query, mode } = state;
 
   const rows = stdout?.rows ?? 24;
   const cols = stdout?.columns ?? 80;
@@ -146,9 +137,10 @@ export function App({
     }
   });
 
-  const showEmptyFavouritesHint = mode === "favourites" && !query && favouritesEmpty;
-  const showEmptyModifiedHint = mode === "modified" && !query && modifiedEmpty;
-  const showEmptyRecentHint = mode === "recent" && !query && recentEmpty;
+  const noItems = items.length === 0;
+  const showEmptyFavouritesHint = mode === "favourites" && !query && noItems;
+  const showEmptyModifiedHint = mode === "modified" && !query && noItems;
+  const showEmptyRecentHint = mode === "recent" && !query && noItems;
 
   return (
     <Box flexDirection="column">

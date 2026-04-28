@@ -12,7 +12,7 @@ interface Tab {
 const TABS: ReadonlyArray<Tab> = [
   { mode: "tree", label: "tree", color: "cyan" },
   { mode: "flat", label: "flat", color: "blue" },
-  { mode: "favourites", label: "★ favorite", color: "yellow" },
+  { mode: "favourites", label: "★ favourite", color: "yellow" },
   { mode: "modified", label: "● modified", color: "cyanBright" },
   { mode: "recent", label: "↻ recent", color: "green" },
 ];

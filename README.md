@@ -8,13 +8,13 @@
 
 ```
 nx-dash
-terminal nx console · v0.1.2
+terminal nx console · v0.1.3
 
 ↑↓ navigate  ⇧↑↓ skip  ←→ expand  Enter run  Tab/⇧Tab switch tab  ⇧→ favourite  type filter  Esc clear  ^C quit
 
 26 projects · via nx show · ~/projects/my-monorepo
 
-tree  flat  ★ favorite  ● modified  ↻ recent
+tree  flat  ★ favourite  ● modified  ↻ recent
 › █ type to filter…
 
 ▾ apps

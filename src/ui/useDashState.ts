@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Fzf, type FzfResultItem } from "fzf";
 
 import { MAX_RECENT } from "../recent/store.js";
@@ -29,9 +29,6 @@ export interface DashState {
   query: string;
   selectedIndex: number;
   items: VisibleItem[];
-  favouritesEmpty: boolean;
-  modifiedEmpty: boolean;
-  recentEmpty: boolean;
   toggleMode: (direction?: 1 | -1) => void;
   setQuery: (q: string) => void;
   appendToQuery: (s: string) => void;
@@ -70,6 +67,8 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
   const [recent, setRecent] = useState<string[]>(() =>
     (options.initialRecent ?? EMPTY_RECENT).slice(0, MAX_RECENT),
   );
+  const recentRef = useRef<string[]>(recent);
+  recentRef.current = recent;
 
   const effectiveMode: DashMode | "search" = query.length > 0 ? "search" : mode;
 
@@ -118,11 +117,11 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
   const onRecentChange = options.onRecentChange;
   const recordRecent = useCallback(
     (key: string) => {
-      setRecent((prev) => {
-        const next = [key, ...prev.filter((k) => k !== key)].slice(0, MAX_RECENT);
-        onRecentChange?.(next);
-        return next;
-      });
+      const prev = recentRef.current;
+      const next = [key, ...prev.filter((k) => k !== key)].slice(0, MAX_RECENT);
+      recentRef.current = next;
+      onRecentChange?.(next);
+      setRecent(next);
     },
     [onRecentChange],
   );
@@ -149,9 +148,6 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
     query,
     selectedIndex,
     items,
-    favouritesEmpty: favourites.size === 0,
-    modifiedEmpty: affected.size === 0,
-    recentEmpty: recent.length === 0,
     toggleMode: cycleMode,
     setQuery,
     appendToQuery: (s) => setQuery((q) => q + s),
