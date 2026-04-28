@@ -3,9 +3,10 @@ import { Fzf, type FzfResultItem } from "fzf";
 
 import { selectionKey, type Project, type Selection } from "../types.js";
 
-export type DashMode = "tree" | "flat" | "favourites";
+export type DashMode = "tree" | "flat" | "favourites" | "modified";
 
-const MODE_ORDER: DashMode[] = ["tree", "flat", "favourites"];
+const MODE_ORDER: DashMode[] = ["tree", "flat", "favourites", "modified"];
+const EMPTY_AFFECTED: Set<string> = new Set();
 
 export interface VisibleItem {
   id: string;
@@ -16,6 +17,7 @@ export interface VisibleItem {
   expanded: boolean;
   selection: Selection | null;
   isFavourite: boolean;
+  isModified: boolean;
   matchPositions?: Set<number>;
 }
 
@@ -26,7 +28,8 @@ export interface DashState {
   selectedIndex: number;
   items: VisibleItem[];
   favouritesEmpty: boolean;
-  toggleMode: () => void;
+  modifiedEmpty: boolean;
+  toggleMode: (direction?: 1 | -1) => void;
   setQuery: (q: string) => void;
   appendToQuery: (s: string) => void;
   popFromQuery: () => void;
@@ -44,11 +47,13 @@ export interface DashState {
 interface UseDashStateOptions {
   initialMode?: DashMode;
   initialFavourites?: Set<string>;
+  affected?: Set<string>;
   onFavouritesChange?: (favourites: Set<string>) => void;
   onModeChange?: (mode: DashMode) => void;
 }
 
 export function useDashState(projects: Project[], options: UseDashStateOptions = {}): DashState {
+  const affected = options.affected ?? EMPTY_AFFECTED;
   const [mode, setMode] = useState<DashMode>(options.initialMode ?? "tree");
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -60,11 +65,12 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
   const effectiveMode: DashMode | "search" = query.length > 0 ? "search" : mode;
 
   const items = useMemo<VisibleItem[]>(() => {
-    if (query.length > 0) return buildSearchItems(projects, query, favourites);
-    if (mode === "favourites") return buildFavouriteItems(projects, favourites);
-    if (mode === "flat") return buildFlatItems(projects, favourites);
-    return buildTreeItems(projects, expanded, favourites);
-  }, [projects, mode, query, expanded, favourites]);
+    if (query.length > 0) return buildSearchItems(projects, query, favourites, affected);
+    if (mode === "favourites") return buildFavouriteItems(projects, favourites, affected);
+    if (mode === "modified") return buildModifiedItems(projects, expanded, favourites, affected);
+    if (mode === "flat") return buildFlatItems(projects, favourites, affected);
+    return buildTreeItems(projects, expanded, favourites, affected);
+  }, [projects, mode, query, expanded, favourites, affected]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -100,13 +106,18 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
   );
 
   const onModeChange = options.onModeChange;
-  const cycleMode = useCallback(() => {
-    setMode((m) => {
-      const next = MODE_ORDER[(MODE_ORDER.indexOf(m) + 1) % MODE_ORDER.length] ?? "tree";
-      onModeChange?.(next);
-      return next;
-    });
-  }, [onModeChange]);
+  const cycleMode = useCallback(
+    (direction: 1 | -1 = 1) => {
+      setMode((m) => {
+        const len = MODE_ORDER.length;
+        const idx = (MODE_ORDER.indexOf(m) + direction + len) % len;
+        const next = MODE_ORDER[idx] ?? "tree";
+        onModeChange?.(next);
+        return next;
+      });
+    },
+    [onModeChange],
+  );
 
   const currentItem = items[selectedIndex];
 
@@ -117,6 +128,7 @@ export function useDashState(projects: Project[], options: UseDashStateOptions =
     selectedIndex,
     items,
     favouritesEmpty: favourites.size === 0,
+    modifiedEmpty: affected.size === 0,
     toggleMode: cycleMode,
     setQuery,
     appendToQuery: (s) => setQuery((q) => q + s),
@@ -153,11 +165,13 @@ function buildTreeItems(
   projects: Project[],
   expanded: Set<string>,
   favourites: Set<string>,
+  affected: Set<string>,
 ): VisibleItem[] {
   const items: VisibleItem[] = [];
   for (const p of projects) {
     const projectId = `p:${p.name}`;
     const projectExpanded = expanded.has(projectId);
+    const projectModified = affected.has(p.name);
     items.push({
       id: projectId,
       kind: "project",
@@ -167,6 +181,7 @@ function buildTreeItems(
       expanded: projectExpanded,
       selection: null,
       isFavourite: false,
+      isModified: projectModified,
     });
     if (!projectExpanded) continue;
 
@@ -183,6 +198,7 @@ function buildTreeItems(
         expanded: targetExpanded,
         selection: targetSelection,
         isFavourite: isFav(targetSelection, favourites),
+        isModified: projectModified,
       });
       if (!targetExpanded) continue;
 
@@ -202,6 +218,7 @@ function buildTreeItems(
           expanded: false,
           selection: cfgSelection,
           isFavourite: isFav(cfgSelection, favourites),
+          isModified: projectModified,
         });
       }
     }
@@ -209,9 +226,14 @@ function buildTreeItems(
   return items;
 }
 
-function buildFlatItems(projects: Project[], favourites: Set<string>): VisibleItem[] {
+function buildFlatItems(
+  projects: Project[],
+  favourites: Set<string>,
+  affected: Set<string>,
+): VisibleItem[] {
   const items: VisibleItem[] = [];
   for (const p of projects) {
+    const projectModified = affected.has(p.name);
     for (const t of p.targets) {
       const targetSelection: Selection = { kind: "target", project: p.name, target: t.name };
       items.push({
@@ -223,6 +245,7 @@ function buildFlatItems(projects: Project[], favourites: Set<string>): VisibleIt
         expanded: false,
         selection: targetSelection,
         isFavourite: isFav(targetSelection, favourites),
+        isModified: projectModified,
       });
       for (const c of t.configurations) {
         const cfgSelection: Selection = {
@@ -240,6 +263,7 @@ function buildFlatItems(projects: Project[], favourites: Set<string>): VisibleIt
           expanded: false,
           selection: cfgSelection,
           isFavourite: isFav(cfgSelection, favourites),
+          isModified: projectModified,
         });
       }
     }
@@ -247,9 +271,13 @@ function buildFlatItems(projects: Project[], favourites: Set<string>): VisibleIt
   return items;
 }
 
-function buildFavouriteItems(projects: Project[], favourites: Set<string>): VisibleItem[] {
+function buildFavouriteItems(
+  projects: Project[],
+  favourites: Set<string>,
+  affected: Set<string>,
+): VisibleItem[] {
   if (favourites.size === 0) return [];
-  const flat = buildFlatItems(projects, favourites);
+  const flat = buildFlatItems(projects, favourites, affected);
   const byKey = new Map<string, VisibleItem>();
   for (const item of flat) {
     if (item.selection) byKey.set(selectionKey(item.selection), item);
@@ -262,12 +290,24 @@ function buildFavouriteItems(projects: Project[], favourites: Set<string>): Visi
   return result;
 }
 
+function buildModifiedItems(
+  projects: Project[],
+  expanded: Set<string>,
+  favourites: Set<string>,
+  affected: Set<string>,
+): VisibleItem[] {
+  if (affected.size === 0) return [];
+  const filtered = projects.filter((p) => affected.has(p.name));
+  return buildTreeItems(filtered, expanded, favourites, affected);
+}
+
 function buildSearchItems(
   projects: Project[],
   query: string,
   favourites: Set<string>,
+  affected: Set<string>,
 ): VisibleItem[] {
-  const flat = buildFlatItems(projects, favourites);
+  const flat = buildFlatItems(projects, favourites, affected);
   const fzf = new Fzf<VisibleItem[]>(flat, {
     selector: (item: VisibleItem) => item.label,
     casing: "smart-case",

@@ -62,6 +62,7 @@ function TreeRow({ item, isSelected }: { item: VisibleItem; isSelected: boolean 
           </Text>
         )}
         {item.isFavourite && <Text color="yellow"> ★</Text>}
+        {item.isModified && item.kind === "project" && <Text color="cyanBright"> ●</Text>}
       </Text>
     </Box>
   );

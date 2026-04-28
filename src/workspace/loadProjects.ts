@@ -86,7 +86,7 @@ async function loadViaNx(
   return projects;
 }
 
-function parseProjectNames(raw: string): string[] {
+export function parseProjectNames(raw: string): string[] {
   const trimmed = raw.trim();
   if (!trimmed) return [];
   try {
@@ -174,7 +174,7 @@ function normalizeProject(input: {
   };
 }
 
-function runJson(cmd: string, args: string[], cwd: string, timeoutMs: number): Promise<string> {
+export function runJson(cmd: string, args: string[], cwd: string, timeoutMs: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";

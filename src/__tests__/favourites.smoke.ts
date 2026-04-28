@@ -52,6 +52,9 @@ try {
   savePreferences(root, { lastMode: "flat" });
   ok(loadPreferences(root).lastMode === "flat", "preferences round-trip flat");
 
+  savePreferences(root, { lastMode: "modified" });
+  ok(loadPreferences(root).lastMode === "modified", "preferences round-trip modified");
+
   // Tampering — invalid mode falls back to default
   const prefsPath = join(dir, "preferences.json");
   require("node:fs").writeFileSync(prefsPath, JSON.stringify({ version: 1, lastMode: "bogus" }));
