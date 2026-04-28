@@ -4,9 +4,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-import { App } from "./ui/App.js";
+import { Bootstrap } from "./ui/Bootstrap.js";
 import { findWorkspaceRoot } from "./workspace/findRoot.js";
-import { loadProjects } from "./workspace/loadProjects.js";
 import { runTarget, buildTargetSpec } from "./runner/runTarget.js";
 import { loadFavourites, saveFavourites } from "./favourites/store.js";
 import { loadPreferences, savePreferences } from "./preferences/store.js";
@@ -83,6 +82,18 @@ function printHelp() {
   );
 }
 
+const ALT_SCREEN_ENTER = "\x1B[?1049h";
+const ALT_SCREEN_EXIT = "\x1B[?1049l";
+
+let altScreenActive = false;
+
+function setAltScreen(enable: boolean): void {
+  if (!process.stdout.isTTY) return;
+  if (enable === altScreenActive) return;
+  process.stdout.write(enable ? ALT_SCREEN_ENTER : ALT_SCREEN_EXIT);
+  altScreenActive = enable;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -103,7 +114,14 @@ async function main() {
     return 1;
   }
 
-  const { projects, source, warning } = await loadProjects(workspaceRoot);
+  setAltScreen(true);
+  process.on("exit", () => setAltScreen(false));
+  for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
+    process.on(sig, () => {
+      setAltScreen(false);
+      process.exit(sig === "SIGINT" ? 130 : sig === "SIGTERM" ? 143 : 129);
+    });
+  }
 
   let selection: Selection | null = null;
   const version = readPackageVersion();
@@ -111,10 +129,7 @@ async function main() {
   const { lastMode } = loadPreferences(workspaceRoot);
 
   const ui = render(
-    <App
-      projects={projects}
-      source={source}
-      warning={warning}
+    <Bootstrap
       workspaceRoot={workspaceRoot}
       version={version}
       initialMode={lastMode}
@@ -146,6 +161,7 @@ async function main() {
   );
 
   await ui.waitUntilExit();
+  setAltScreen(false);
 
   if (!selection) return 0;
 

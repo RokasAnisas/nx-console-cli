@@ -12,32 +12,53 @@ export interface LoadResult {
   warning?: string;
 }
 
-const NX_TIMEOUT_MS = 5_000;
-const PER_PROJECT_TIMEOUT_MS = 5_000;
+export type LoadProgress =
+  | { phase: "discovering" }
+  | { phase: "loading"; current: number; total: number }
+  | { phase: "fallback"; reason: string };
+
+export type ProgressCallback = (progress: LoadProgress) => void;
+
+const NX_TIMEOUT_MS = 10_000;
+const PER_PROJECT_TIMEOUT_MS = 10_000;
 const PER_PROJECT_CONCURRENCY = 8;
 
-export async function loadProjects(workspaceRoot: string): Promise<LoadResult> {
+export async function loadProjects(
+  workspaceRoot: string,
+  onProgress?: ProgressCallback,
+): Promise<LoadResult> {
+  onProgress?.({ phase: "discovering" });
   try {
-    const projects = await loadViaNx(workspaceRoot);
+    const projects = await loadViaNx(workspaceRoot, onProgress);
     if (projects.length > 0) return { projects, source: "nx" };
   } catch (err) {
+    const reason = `\`nx show\` failed (${(err as Error).message}); falling back to project.json scan.`;
+    onProgress?.({ phase: "fallback", reason });
     const projects = await loadViaGlob(workspaceRoot);
-    return {
-      projects,
-      source: "glob",
-      warning: `\`nx show\` failed (${(err as Error).message}); falling back to project.json scan.`,
-    };
+    return { projects, source: "glob", warning: reason };
   }
 
   const projects = await loadViaGlob(workspaceRoot);
   return { projects, source: "glob" };
 }
 
-async function loadViaNx(workspaceRoot: string): Promise<Project[]> {
+async function loadViaNx(
+  workspaceRoot: string,
+  onProgress?: ProgressCallback,
+): Promise<Project[]> {
   const nxBin = resolveNxBin(workspaceRoot);
-  const namesJson = await runJson(nxBin.cmd, [...nxBin.args, "show", "projects", "--json"], workspaceRoot, NX_TIMEOUT_MS);
+  const namesJson = await runJson(
+    nxBin.cmd,
+    [...nxBin.args, "show", "projects", "--json"],
+    workspaceRoot,
+    NX_TIMEOUT_MS,
+  );
   const names = parseProjectNames(namesJson);
   if (names.length === 0) return [];
+
+  const total = names.length;
+  let done = 0;
+  onProgress?.({ phase: "loading", current: done, total });
 
   const projects: Project[] = [];
   for (let i = 0; i < names.length; i += PER_PROJECT_CONCURRENCY) {
@@ -49,8 +70,13 @@ async function loadViaNx(workspaceRoot: string): Promise<Project[]> {
           [...nxBin.args, "show", "project", name, "--json"],
           workspaceRoot,
           PER_PROJECT_TIMEOUT_MS,
-        ).then((raw) => mapNxProject(name, raw))
-          .catch(() => null),
+        )
+          .then((raw) => mapNxProject(name, raw))
+          .catch(() => null)
+          .finally(() => {
+            done += 1;
+            onProgress?.({ phase: "loading", current: done, total });
+          }),
       ),
     );
     for (const r of results) if (r) projects.push(r);
