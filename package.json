@@ -18,9 +18,7 @@
     "cli",
     "tui",
     "terminal",
-    "nx-console",
-    "ink",
-    "fzf"
+    "nx-console"
   ],
   "type": "module",
   "bin": "./dist/cli.js",
