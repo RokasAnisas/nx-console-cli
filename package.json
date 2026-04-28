@@ -4,6 +4,24 @@
   "description": "Terminal UI for browsing and running NX targets, like NX Console for the CLI.",
   "license": "MIT",
   "author": "Rokas Anisas",
+  "homepage": "https://github.com/RokasAnisas/nx-console-cli#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RokasAnisas/nx-console-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RokasAnisas/nx-console-cli/issues"
+  },
+  "keywords": [
+    "nx",
+    "monorepo",
+    "cli",
+    "tui",
+    "terminal",
+    "nx-console",
+    "ink",
+    "fzf"
+  ],
   "type": "module",
   "bin": "./dist/cli.js",
   "main": "./dist/cli.js",
