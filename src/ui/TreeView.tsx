@@ -31,21 +31,23 @@ export function TreeView({ items, selectedIndex, height }: Props) {
 
 function TreeRow({ item, isSelected }: { item: VisibleItem; isSelected: boolean }) {
   const indent = "  ".repeat(item.depth);
-  const glyph = item.kind === "project"
-    ? item.hasChildren
-      ? item.expanded ? "▾" : "▸"
-      : "•"
-    : item.kind === "target"
+  const glyph =
+    item.kind === "project"
       ? item.hasChildren
-        ? item.expanded ? "▾" : "▸"
+        ? item.expanded
+          ? "▾"
+          : "▸"
         : "•"
-      : "·";
+      : item.kind === "target"
+        ? item.hasChildren
+          ? item.expanded
+            ? "▾"
+            : "▸"
+          : "•"
+        : "·";
 
-  const labelColor = item.kind === "project"
-    ? "cyan"
-    : item.kind === "target"
-      ? "yellow"
-      : "magenta";
+  const labelColor =
+    item.kind === "project" ? "cyan" : item.kind === "target" ? "yellow" : "magenta";
 
   return (
     <Box>
@@ -62,6 +64,7 @@ function TreeRow({ item, isSelected }: { item: VisibleItem; isSelected: boolean 
           </Text>
         )}
         {item.isFavourite && <Text color="yellow"> ★</Text>}
+        {item.isModified && item.kind === "project" && <Text color="cyanBright"> ●</Text>}
       </Text>
     </Box>
   );

@@ -9,6 +9,7 @@ import { findWorkspaceRoot } from "./workspace/findRoot.js";
 import { runTarget, buildTargetSpec } from "./runner/runTarget.js";
 import { loadFavourites, saveFavourites } from "./favourites/store.js";
 import { loadPreferences, savePreferences } from "./preferences/store.js";
+import { loadRecent, saveRecent } from "./recent/store.js";
 import type { Selection } from "./types.js";
 
 interface Args {
@@ -70,7 +71,8 @@ function printHelp() {
       "  Shift+↑/↓  Skip 5 items at a time",
       "  ←/→        Collapse / expand",
       "  Enter      Run selected target (or expand selected project)",
-      "  Tab        Cycle tree / flat / ★ favourites",
+      "  Tab        Next tab (tree / flat / ★ favourites / ● modified / ↻ recent)",
+      "  Shift+Tab  Previous tab",
       "  Shift+→    Toggle ★ favourite on selected target",
       "  type       Filter (auto-switches to ranked flat mode)",
       "  Esc        Clear filter, then quit",
@@ -78,6 +80,9 @@ function printHelp() {
       "",
       "FAVOURITES",
       "  Stored in <workspace>/.nx-dash/favourites.json (auto-gitignored)",
+      "",
+      "RECENT",
+      "  Last 5 run targets are stored in <workspace>/.nx-dash/recent.json",
       "",
     ].join("\n"),
   );
@@ -140,6 +145,7 @@ async function main() {
   let selection: Selection | null = null;
   const version = readPackageVersion();
   const initialFavourites = loadFavourites(workspaceRoot);
+  const initialRecent = loadRecent(workspaceRoot);
   const { lastMode } = loadPreferences(workspaceRoot);
 
   const ui = render(
@@ -148,6 +154,7 @@ async function main() {
       version={version}
       initialMode={lastMode}
       initialFavourites={initialFavourites}
+      initialRecent={initialRecent}
       onFavouritesChange={(favourites) => {
         try {
           saveFavourites(workspaceRoot, favourites);
@@ -155,6 +162,13 @@ async function main() {
           process.stderr.write(
             `nx-dash: failed to persist favourites: ${(err as Error).message}\n`,
           );
+        }
+      }}
+      onRecentChange={(recent) => {
+        try {
+          saveRecent(workspaceRoot, recent);
+        } catch (err) {
+          process.stderr.write(`nx-dash: failed to persist recent: ${(err as Error).message}\n`);
         }
       }}
       onModeChange={(mode) => {

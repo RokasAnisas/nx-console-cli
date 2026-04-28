@@ -42,10 +42,7 @@ export async function loadProjects(
   return { projects, source: "glob" };
 }
 
-async function loadViaNx(
-  workspaceRoot: string,
-  onProgress?: ProgressCallback,
-): Promise<Project[]> {
+async function loadViaNx(workspaceRoot: string, onProgress?: ProgressCallback): Promise<Project[]> {
   const nxBin = resolveNxBin(workspaceRoot);
   const namesJson = await runJson(
     nxBin.cmd,
@@ -86,7 +83,7 @@ async function loadViaNx(
   return projects;
 }
 
-function parseProjectNames(raw: string): string[] {
+export function parseProjectNames(raw: string): string[] {
   const trimmed = raw.trim();
   if (!trimmed) return [];
   try {
@@ -152,9 +149,11 @@ function normalizeProject(input: {
   targets: Record<string, any>;
 }): Project {
   const targets: Target[] = Object.entries(input.targets ?? {}).map(([targetName, def]) => {
-    const configurations: Configuration[] = Object.keys(def?.configurations ?? {}).map((cfgName) => ({
-      name: cfgName,
-    }));
+    const configurations: Configuration[] = Object.keys(def?.configurations ?? {}).map(
+      (cfgName) => ({
+        name: cfgName,
+      }),
+    );
     return {
       name: targetName,
       executor: typeof def?.executor === "string" ? def.executor : undefined,
@@ -167,14 +166,20 @@ function normalizeProject(input: {
   return {
     name: input.name,
     root: input.root,
-    projectType: input.projectType === "application" || input.projectType === "library"
-      ? input.projectType
-      : undefined,
+    projectType:
+      input.projectType === "application" || input.projectType === "library"
+        ? input.projectType
+        : undefined,
     targets,
   };
 }
 
-function runJson(cmd: string, args: string[], cwd: string, timeoutMs: number): Promise<string> {
+export function runJson(
+  cmd: string,
+  args: string[],
+  cwd: string,
+  timeoutMs: number,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";

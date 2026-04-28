@@ -3,6 +3,7 @@ import { Box, Text, useApp, useInput, useStdout } from "ink";
 
 import { useDashState, type DashMode } from "./useDashState.js";
 import { SearchInput } from "./SearchInput.js";
+import { TabBar } from "./TabBar.js";
 import { TreeView } from "./TreeView.js";
 import { FlatList } from "./FlatList.js";
 import { Logo } from "./Logo.js";
@@ -15,18 +16,20 @@ interface Props {
   source: "nx" | "glob";
   warning?: string;
   refreshing?: boolean;
+  affected: Set<string>;
   workspaceRoot: string;
   version: string;
   initialMode: DashMode;
   initialFavourites: Set<string>;
+  initialRecent: string[];
   onFavouritesChange: (favourites: Set<string>) => void;
+  onRecentChange: (recent: string[]) => void;
   onModeChange: (mode: DashMode) => void;
   onSelect: (selection: Selection) => void;
 }
 
-const COMPACT_HEADER_ROWS = 6;
-const FULL_HEADER_ROWS_WIDE = 12;
-const FULL_HEADER_ROWS_NARROW = 13;
+const HEADER_ROWS_FULL = 9;
+const HEADER_ROWS_WRAPPED = 10;
 const SHORTCUTS_NO_WRAP_WIDTH = 100;
 const SKIP_STEP = 5;
 
@@ -35,11 +38,14 @@ export function App({
   source,
   warning,
   refreshing,
+  affected,
   workspaceRoot,
   version,
   initialMode,
   initialFavourites,
+  initialRecent,
   onFavouritesChange,
+  onRecentChange,
   onModeChange,
   onSelect,
 }: Props) {
@@ -48,19 +54,17 @@ export function App({
   const state = useDashState(projects, {
     initialMode,
     initialFavourites,
+    initialRecent,
+    affected,
     onFavouritesChange,
+    onRecentChange,
     onModeChange,
   });
-  const { items, selectedIndex, effectiveMode, query, mode, favouritesEmpty } = state;
+  const { items, selectedIndex, effectiveMode, query, mode } = state;
 
   const rows = stdout?.rows ?? 24;
   const cols = stdout?.columns ?? 80;
-  const compactLayout = cols < 60;
-  const headerRows = compactLayout
-    ? COMPACT_HEADER_ROWS
-    : cols >= SHORTCUTS_NO_WRAP_WIDTH
-      ? FULL_HEADER_ROWS_WIDE
-      : FULL_HEADER_ROWS_NARROW;
+  const headerRows = cols >= SHORTCUTS_NO_WRAP_WIDTH ? HEADER_ROWS_FULL : HEADER_ROWS_WRAPPED;
   const listHeight = Math.max(5, rows - headerRows - (warning ? 1 : 0));
 
   useEffect(() => {
@@ -81,7 +85,7 @@ export function App({
       return;
     }
     if (key.tab) {
-      state.toggleMode();
+      state.toggleMode(key.shift ? -1 : 1);
       return;
     }
     if (key.upArrow) {
@@ -109,7 +113,10 @@ export function App({
         state.toggleExpand(item.id);
         return;
       }
-      if (item.selection) onSelect(item.selection);
+      if (item.selection) {
+        state.recordRecentSelected();
+        onSelect(item.selection);
+      }
       return;
     }
     if (key.rightArrow) {
@@ -130,11 +137,14 @@ export function App({
     }
   });
 
-  const showEmptyFavouritesHint = mode === "favourites" && !query && favouritesEmpty;
+  const noItems = items.length === 0;
+  const showEmptyFavouritesHint = mode === "favourites" && !query && noItems;
+  const showEmptyModifiedHint = mode === "modified" && !query && noItems;
+  const showEmptyRecentHint = mode === "recent" && !query && noItems;
 
   return (
     <Box flexDirection="column">
-      <Logo version={version} terminalWidth={cols} />
+      <Logo version={version} />
       <Box marginTop={1}>
         <Shortcuts terminalWidth={cols} />
       </Box>
@@ -151,6 +161,9 @@ export function App({
           refreshing={refreshing}
         />
       </Box>
+      <Box marginTop={1}>
+        <TabBar mode={mode} searching={effectiveMode === "search"} />
+      </Box>
       <SearchInput query={query} mode={effectiveMode} />
       <Box height={listHeight} flexDirection="column" flexShrink={0}>
         {showEmptyFavouritesHint ? (
@@ -161,11 +174,27 @@ export function App({
               <Text color="cyan">Tab</Text> to switch back.
             </Text>
           </Box>
+        ) : showEmptyModifiedHint ? (
+          <Box flexDirection="column">
+            <Text color="cyan">● No modified projects.</Text>
+            <Text color="gray" dimColor>
+              Edit a file in a project, or check that <Text color="cyan">nx</Text> supports{" "}
+              <Text color="cyan">show projects --affected</Text>.
+            </Text>
+          </Box>
+        ) : showEmptyRecentHint ? (
+          <Box flexDirection="column">
+            <Text color="green">↻ No recent runs.</Text>
+            <Text color="gray" dimColor>
+              Press <Text color="cyan">Enter</Text> on a target to record it. Up to{" "}
+              <Text color="cyan">5</Text> recent targets are kept.
+            </Text>
+          </Box>
         ) : items.length === 0 ? (
           <Text color="gray" dimColor>
             {projects.length === 0 ? "No projects found." : "No matches."}
           </Text>
-        ) : effectiveMode === "tree" ? (
+        ) : effectiveMode === "tree" || effectiveMode === "modified" ? (
           <TreeView items={items} selectedIndex={selectedIndex} height={listHeight} />
         ) : (
           <FlatList items={items} selectedIndex={selectedIndex} height={listHeight} />

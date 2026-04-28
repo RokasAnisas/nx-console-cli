@@ -7,26 +7,23 @@
 > A terminal UI for browsing and running [NX](https://nx.dev) targets — like NX Console, for the CLI.
 
 ```
-███╗   ██╗██╗  ██╗      ██████╗  █████╗ ███████╗██╗  ██╗
-████╗  ██║╚██╗██╔╝      ██╔══██╗██╔══██╗██╔════╝██║  ██║
-██╔██╗ ██║ ╚███╔╝ █████╗██║  ██║███████║███████╗███████║
-██║╚██╗██║ ██╔██╗ ╚════╝██║  ██║██╔══██║╚════██║██╔══██║
-██║ ╚████║██╔╝ ██╗      ██████╔╝██║  ██║███████║██║  ██║
-╚═╝  ╚═══╝╚═╝  ╚═╝      ╚═════╝ ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-                                    terminal nx console
+nx-dash
+terminal nx console · v0.1.3
 
-↑↓ navigate  ←→ expand  Enter run  Tab tree/flat/★  ⇧→ favourite  type filter  Esc clear  ^C quit
+↑↓ navigate  ⇧↑↓ skip  ←→ expand  Enter run  Tab/⇧Tab switch tab  ⇧→ favourite  type filter  Esc clear  ^C quit
 
 26 projects · via nx show · ~/projects/my-monorepo
-tree › █ type to filter…
+
+tree  flat  ★ favourite  ● modified  ↻ recent
+› █ type to filter…
 
 ▾ apps
-  ▾ calnote-landing
+  ▾ landing-page ●
     ▸ build ★
     • dev
     • lint
     • test
-  ▸ calnote-web-app
+  ▸ web-app
 ▸ libs
 ```
 
@@ -39,9 +36,11 @@ tree › █ type to filter…
 - 🌳 **Tree** of projects → targets → configurations, just like NX Console.
 - 🔍 **Fuzzy filter** — start typing; matches are ranked and highlighted.
 - ⭐ **Favourites** — star the targets you run all day; persists per workspace.
+- ● **Modified** — projects affected by your local changes (via `nx show projects --affected`) get a dot indicator and a dedicated tab.
+- ↻ **Recent** — the last 5 targets you ran are kept in a dedicated tab so re-running is one tab away.
 - ⚡ **Instant restart** — first launch caches the project list; subsequent launches render in milliseconds while a fresh scan runs in the background.
 - 🎯 **Clean handoff** — the TUI fully vanishes on `Enter`; the selected target runs in the original terminal with full stdio and signal forwarding.
-- 🧠 **Remembers** the last view mode (tree / flat / favourites) per workspace.
+- 🧠 **Remembers** the last view mode (tree / flat / ★ favourites / ● modified / ↻ recent) per workspace.
 - 🪶 **Zero config** — walks up to find `nx.json`, prefers the local `nx` binary, falls back to scanning `project.json` files.
 
 ## Quick start
@@ -58,26 +57,27 @@ That's it — run `nx-dash` anywhere inside an NX monorepo. Navigate with arrows
 
 ## Keybindings
 
-| Key             | Action                                        |
-| --------------- | --------------------------------------------- |
-| `↑` `↓`         | Move selection                                |
-| `Shift` + `↑/↓` | Skip 5 items at a time                        |
-| `←` `→`         | Collapse / expand                             |
-| `Enter`         | Run selected target (or expand a project)     |
-| `Tab`           | Cycle view: tree → flat → ★ favourites        |
-| `Shift` + `→`   | Toggle ★ favourite on the selected target     |
-| *type*          | Fuzzy filter (auto-switches to ranked list)   |
-| `Esc`           | Clear filter, then quit                       |
-| `Ctrl` + `C`    | Quit                                          |
+| Key             | Action                                                      |
+| --------------- | ----------------------------------------------------------- |
+| `↑` `↓`         | Move selection                                              |
+| `Shift` + `↑/↓` | Skip 5 items at a time                                      |
+| `←` `→`         | Collapse / expand                                           |
+| `Enter`         | Run selected target (or expand a project)                   |
+| `Tab`           | Next tab: tree → flat → ★ favourite → ● modified → ↻ recent |
+| `Shift` + `Tab` | Previous tab                                                |
+| `Shift` + `→`   | Toggle ★ favourite on the selected target                   |
+| _type_          | Fuzzy filter (auto-switches to ranked list)                 |
+| `Esc`           | Clear filter, then quit                                     |
+| `Ctrl` + `C`    | Quit                                                        |
 
 ## Flags
 
-| Flag                | Description                                                  |
-| ------------------- | ------------------------------------------------------------ |
-| `--cwd <path>`      | Pretend the CLI was launched from `<path>`                   |
-| `--dry-run`         | Print the resolved `nx run …` command instead of executing  |
-| `-h`, `--help`      | Show help                                                    |
-| `-v`, `--version`   | Print version                                                |
+| Flag              | Description                                                |
+| ----------------- | ---------------------------------------------------------- |
+| `--cwd <path>`    | Pretend the CLI was launched from `<path>`                 |
+| `--dry-run`       | Print the resolved `nx run …` command instead of executing |
+| `-h`, `--help`    | Show help                                                  |
+| `-v`, `--version` | Print version                                              |
 
 ## How it works
 
@@ -97,6 +97,7 @@ All per-workspace state lives under a `.nx-dash/` directory at the workspace roo
 ├── .gitignore           # contains: *
 ├── favourites.json      # your starred targets
 ├── preferences.json     # last-used view mode
+├── recent.json          # last 5 targets you ran
 └── projects-cache.json  # cached project list
 ```
 

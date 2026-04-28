@@ -5,6 +5,7 @@ import { App } from "./App.js";
 import { LoadingScreen } from "./LoadingScreen.js";
 import { Logo } from "./Logo.js";
 import { loadProjects, type LoadProgress, type LoadResult } from "../workspace/loadProjects.js";
+import { loadAffectedProjects } from "../workspace/loadAffected.js";
 import { loadCachedProjects, saveCachedProjects } from "../cache/projectsCache.js";
 import type { DashMode } from "./useDashState.js";
 import type { Selection } from "../types.js";
@@ -14,7 +15,9 @@ interface Props {
   version: string;
   initialMode: DashMode;
   initialFavourites: Set<string>;
+  initialRecent: string[];
   onFavouritesChange: (favourites: Set<string>) => void;
+  onRecentChange: (recent: string[]) => void;
   onModeChange: (mode: DashMode) => void;
   onSelect: (selection: Selection) => void;
 }
@@ -40,6 +43,7 @@ export function Bootstrap(props: Props) {
     }
     return { status: "loading", progress: null };
   });
+  const [affected, setAffected] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +77,17 @@ export function Bootstrap(props: Props) {
   }, [props.workspaceRoot]);
 
   useEffect(() => {
+    let cancelled = false;
+    loadAffectedProjects(props.workspaceRoot).then((next) => {
+      if (cancelled) return;
+      setAffected(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [props.workspaceRoot]);
+
+  useEffect(() => {
     if (state.status !== "error") return;
     const t = setTimeout(() => exit(), 80);
     return () => clearTimeout(t);
@@ -92,7 +107,7 @@ export function Bootstrap(props: Props) {
   if (state.status === "error") {
     return (
       <Box flexDirection="column">
-        <Logo version={props.version} terminalWidth={cols} />
+        <Logo version={props.version} />
         <Box marginTop={1}>
           <Text color="red">✖ Failed to load projects: </Text>
           <Text>{state.message}</Text>
@@ -107,11 +122,14 @@ export function Bootstrap(props: Props) {
       source={state.result.source}
       warning={state.result.warning}
       refreshing={state.refreshing}
+      affected={affected}
       workspaceRoot={props.workspaceRoot}
       version={props.version}
       initialMode={props.initialMode}
       initialFavourites={props.initialFavourites}
+      initialRecent={props.initialRecent}
       onFavouritesChange={props.onFavouritesChange}
+      onRecentChange={props.onRecentChange}
       onModeChange={props.onModeChange}
       onSelect={props.onSelect}
     />

@@ -17,7 +17,7 @@ export function LoadingScreen({ version, workspaceRoot, terminalWidth, progress 
   const frame = useSpinnerFrame();
   return (
     <Box flexDirection="column">
-      <Logo version={version} terminalWidth={terminalWidth} />
+      <Logo version={version} />
       <Box marginTop={1}>
         <Shortcuts terminalWidth={terminalWidth} />
       </Box>
