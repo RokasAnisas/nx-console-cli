@@ -1,0 +1,277 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fzf, type FzfResultItem } from "fzf";
+
+import { selectionKey, type Project, type Selection } from "../types.js";
+
+export type DashMode = "tree" | "flat" | "favourites";
+
+const MODE_ORDER: DashMode[] = ["tree", "flat", "favourites"];
+
+export interface VisibleItem {
+  id: string;
+  kind: "project" | "target" | "configuration";
+  label: string;
+  depth: number;
+  hasChildren: boolean;
+  expanded: boolean;
+  selection: Selection | null;
+  isFavourite: boolean;
+  matchPositions?: Set<number>;
+}
+
+export interface DashState {
+  mode: DashMode;
+  effectiveMode: DashMode | "search";
+  query: string;
+  selectedIndex: number;
+  items: VisibleItem[];
+  favouritesEmpty: boolean;
+  toggleMode: () => void;
+  setQuery: (q: string) => void;
+  appendToQuery: (s: string) => void;
+  popFromQuery: () => void;
+  clearQuery: () => void;
+  moveUp: () => void;
+  moveDown: () => void;
+  pageUp: (n: number) => void;
+  pageDown: (n: number) => void;
+  toggleExpand: (id: string) => void;
+  expandSelected: () => void;
+  collapseSelected: () => void;
+  toggleFavouriteSelected: () => void;
+}
+
+interface UseDashStateOptions {
+  initialMode?: DashMode;
+  initialFavourites?: Set<string>;
+  onFavouritesChange?: (favourites: Set<string>) => void;
+  onModeChange?: (mode: DashMode) => void;
+}
+
+export function useDashState(projects: Project[], options: UseDashStateOptions = {}): DashState {
+  const [mode, setMode] = useState<DashMode>(options.initialMode ?? "tree");
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [favourites, setFavourites] = useState<Set<string>>(
+    () => new Set(options.initialFavourites ?? []),
+  );
+
+  const effectiveMode: DashMode | "search" = query.length > 0 ? "search" : mode;
+
+  const items = useMemo<VisibleItem[]>(() => {
+    if (query.length > 0) return buildSearchItems(projects, query, favourites);
+    if (mode === "favourites") return buildFavouriteItems(projects, favourites);
+    if (mode === "flat") return buildFlatItems(projects, favourites);
+    return buildTreeItems(projects, expanded, favourites);
+  }, [projects, mode, query, expanded, favourites]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query, mode]);
+
+  useEffect(() => {
+    if (selectedIndex >= items.length) {
+      setSelectedIndex(Math.max(0, items.length - 1));
+    }
+  }, [items.length, selectedIndex]);
+
+  const toggleExpand = useCallback((id: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const onFavChange = options.onFavouritesChange;
+  const toggleFavourite = useCallback(
+    (key: string) => {
+      setFavourites((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        onFavChange?.(next);
+        return next;
+      });
+    },
+    [onFavChange],
+  );
+
+  const onModeChange = options.onModeChange;
+  const cycleMode = useCallback(() => {
+    setMode((m) => {
+      const next = MODE_ORDER[(MODE_ORDER.indexOf(m) + 1) % MODE_ORDER.length] ?? "tree";
+      onModeChange?.(next);
+      return next;
+    });
+  }, [onModeChange]);
+
+  const currentItem = items[selectedIndex];
+
+  return {
+    mode,
+    effectiveMode,
+    query,
+    selectedIndex,
+    items,
+    favouritesEmpty: favourites.size === 0,
+    toggleMode: cycleMode,
+    setQuery,
+    appendToQuery: (s) => setQuery((q) => q + s),
+    popFromQuery: () => setQuery((q) => q.slice(0, -1)),
+    clearQuery: () => setQuery(""),
+    moveUp: () => setSelectedIndex((i) => Math.max(0, i - 1)),
+    moveDown: () => setSelectedIndex((i) => Math.min(Math.max(items.length - 1, 0), i + 1)),
+    pageUp: (n) => setSelectedIndex((i) => Math.max(0, i - n)),
+    pageDown: (n) => setSelectedIndex((i) => Math.min(Math.max(items.length - 1, 0), i + n)),
+    toggleExpand,
+    expandSelected: () => {
+      if (currentItem && currentItem.hasChildren && !currentItem.expanded) {
+        toggleExpand(currentItem.id);
+      }
+    },
+    collapseSelected: () => {
+      if (currentItem && currentItem.hasChildren && currentItem.expanded) {
+        toggleExpand(currentItem.id);
+      }
+    },
+    toggleFavouriteSelected: () => {
+      if (currentItem && currentItem.selection) {
+        toggleFavourite(selectionKey(currentItem.selection));
+      }
+    },
+  };
+}
+
+function isFav(selection: Selection | null, favourites: Set<string>): boolean {
+  return selection ? favourites.has(selectionKey(selection)) : false;
+}
+
+function buildTreeItems(
+  projects: Project[],
+  expanded: Set<string>,
+  favourites: Set<string>,
+): VisibleItem[] {
+  const items: VisibleItem[] = [];
+  for (const p of projects) {
+    const projectId = `p:${p.name}`;
+    const projectExpanded = expanded.has(projectId);
+    items.push({
+      id: projectId,
+      kind: "project",
+      label: p.name,
+      depth: 0,
+      hasChildren: p.targets.length > 0,
+      expanded: projectExpanded,
+      selection: null,
+      isFavourite: false,
+    });
+    if (!projectExpanded) continue;
+
+    for (const t of p.targets) {
+      const targetId = `t:${p.name}:${t.name}`;
+      const targetExpanded = expanded.has(targetId);
+      const targetSelection: Selection = { kind: "target", project: p.name, target: t.name };
+      items.push({
+        id: targetId,
+        kind: "target",
+        label: t.name,
+        depth: 1,
+        hasChildren: t.configurations.length > 0,
+        expanded: targetExpanded,
+        selection: targetSelection,
+        isFavourite: isFav(targetSelection, favourites),
+      });
+      if (!targetExpanded) continue;
+
+      for (const c of t.configurations) {
+        const cfgSelection: Selection = {
+          kind: "configuration",
+          project: p.name,
+          target: t.name,
+          configuration: c.name,
+        };
+        items.push({
+          id: `c:${p.name}:${t.name}:${c.name}`,
+          kind: "configuration",
+          label: c.name,
+          depth: 2,
+          hasChildren: false,
+          expanded: false,
+          selection: cfgSelection,
+          isFavourite: isFav(cfgSelection, favourites),
+        });
+      }
+    }
+  }
+  return items;
+}
+
+function buildFlatItems(projects: Project[], favourites: Set<string>): VisibleItem[] {
+  const items: VisibleItem[] = [];
+  for (const p of projects) {
+    for (const t of p.targets) {
+      const targetSelection: Selection = { kind: "target", project: p.name, target: t.name };
+      items.push({
+        id: `t:${p.name}:${t.name}`,
+        kind: "target",
+        label: `${p.name}:${t.name}`,
+        depth: 0,
+        hasChildren: false,
+        expanded: false,
+        selection: targetSelection,
+        isFavourite: isFav(targetSelection, favourites),
+      });
+      for (const c of t.configurations) {
+        const cfgSelection: Selection = {
+          kind: "configuration",
+          project: p.name,
+          target: t.name,
+          configuration: c.name,
+        };
+        items.push({
+          id: `c:${p.name}:${t.name}:${c.name}`,
+          kind: "configuration",
+          label: `${p.name}:${t.name}:${c.name}`,
+          depth: 0,
+          hasChildren: false,
+          expanded: false,
+          selection: cfgSelection,
+          isFavourite: isFav(cfgSelection, favourites),
+        });
+      }
+    }
+  }
+  return items;
+}
+
+function buildFavouriteItems(projects: Project[], favourites: Set<string>): VisibleItem[] {
+  if (favourites.size === 0) return [];
+  const flat = buildFlatItems(projects, favourites);
+  const byKey = new Map<string, VisibleItem>();
+  for (const item of flat) {
+    if (item.selection) byKey.set(selectionKey(item.selection), item);
+  }
+  const result: VisibleItem[] = [];
+  for (const key of favourites) {
+    const item = byKey.get(key);
+    if (item) result.push(item);
+  }
+  return result;
+}
+
+function buildSearchItems(
+  projects: Project[],
+  query: string,
+  favourites: Set<string>,
+): VisibleItem[] {
+  const flat = buildFlatItems(projects, favourites);
+  const fzf = new Fzf<VisibleItem[]>(flat, {
+    selector: (item: VisibleItem) => item.label,
+    casing: "smart-case",
+  });
+  const results: FzfResultItem<VisibleItem>[] = fzf.find(query);
+  return results.map((r) => ({ ...r.item, matchPositions: r.positions }));
+}

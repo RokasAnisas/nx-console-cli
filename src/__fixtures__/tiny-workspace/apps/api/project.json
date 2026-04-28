@@ -1,0 +1,23 @@
+{
+  "name": "api",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/api/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "options": { "outputPath": "dist/apps/api" }
+    },
+    "serve": {
+      "executor": "@nx/node:node",
+      "configurations": {
+        "local": { "args": ["--env", "local"] },
+        "dev": { "args": ["--env", "dev"] },
+        "prod": { "args": ["--env", "prod"] }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}
