@@ -1086,9 +1086,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx-console-cli@workspace:.":
+"nx-dash@workspace:.":
   version: 0.0.0-use.local
-  resolution: "nx-console-cli@workspace:."
+  resolution: "nx-dash@workspace:."
   dependencies:
     "@inkjs/ui": "npm:^2.0.0"
     "@types/node": "npm:^20.14.0"
