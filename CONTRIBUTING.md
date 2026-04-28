@@ -80,16 +80,19 @@ src/
 ## CI / release
 
 - [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs `typecheck → test → build` on every PR and push to `main`.
-- [`.github/workflows/publish.yml`](.github/workflows/publish.yml) publishes to npm on `git push --tags v*` via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers) — no long-lived `NPM_TOKEN` required.
+- [`.github/workflows/publish.yml`](.github/workflows/publish.yml) publishes to npm when a **GitHub Release** is published, via [OIDC trusted publishing](https://docs.npmjs.com/trusted-publishers) — no long-lived `NPM_TOKEN` required.
 
 To release a new version:
 
-```sh
-yarn version patch          # or: minor / major
-git push origin main --follow-tags
-```
+1. Bump the version locally and push the tag:
+   ```sh
+   yarn version patch          # or: minor / major
+   git push origin main --follow-tags
+   ```
+2. On GitHub, **Create a new Release** from the pushed tag (`Releases → Draft a new release`). The tag name may be either `0.1.2` or `v0.1.2`.
+3. Publishing the release triggers the workflow, which verifies the tag matches `package.json#version` and runs `npm publish --access public` (with provenance attestations generated automatically).
 
-CI verifies the tag matches `package.json#version` and runs `npm publish --access public` (with provenance attestations generated automatically).
+You can also trigger the workflow manually via *Actions → Publish → Run workflow*.
 
 ## Filing issues / PRs
 
