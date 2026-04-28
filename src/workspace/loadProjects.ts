@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { basename, dirname, join, relative } from "node:path";
+import { basename, dirname, relative } from "node:path";
 import { glob } from "tinyglobby";
 
+import { resolveNxBin } from "./nxBin.js";
 import type { Project, Target, Configuration } from "../types.js";
 
 export interface LoadResult {
@@ -84,12 +84,6 @@ async function loadViaNx(
 
   projects.sort((a, b) => a.name.localeCompare(b.name));
   return projects;
-}
-
-function resolveNxBin(workspaceRoot: string): { cmd: string; args: string[] } {
-  const local = join(workspaceRoot, "node_modules", ".bin", "nx");
-  if (existsSync(local)) return { cmd: local, args: [] };
-  return { cmd: "npx", args: ["--no-install", "nx"] };
 }
 
 function parseProjectNames(raw: string): string[] {

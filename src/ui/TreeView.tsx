@@ -32,7 +32,9 @@ export function TreeView({ items, selectedIndex, height }: Props) {
 function TreeRow({ item, isSelected }: { item: VisibleItem; isSelected: boolean }) {
   const indent = "  ".repeat(item.depth);
   const glyph = item.kind === "project"
-    ? item.expanded ? "▾" : "▸"
+    ? item.hasChildren
+      ? item.expanded ? "▾" : "▸"
+      : "•"
     : item.kind === "target"
       ? item.hasChildren
         ? item.expanded ? "▾" : "▸"

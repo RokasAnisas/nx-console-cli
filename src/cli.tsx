@@ -115,13 +115,26 @@ async function main() {
     return 1;
   }
 
+  // Restore the alt screen if the process is killed before normal exit.
+  // These handlers must be removed once the TUI unmounts so they don't
+  // interfere with `runTarget`'s SIGINT/SIGTERM forwarding to the nx child.
   setAltScreen(true);
-  process.on("exit", () => setAltScreen(false));
-  for (const sig of ["SIGINT", "SIGTERM", "SIGHUP"] as const) {
-    process.on(sig, () => {
+  const onProcessExit = () => setAltScreen(false);
+  process.on("exit", onProcessExit);
+  const signalHandlers: Array<[NodeJS.Signals, () => void]> = (
+    ["SIGINT", "SIGTERM", "SIGHUP"] as const
+  ).map((sig) => {
+    const handler = () => {
       setAltScreen(false);
       process.exit(sig === "SIGINT" ? 130 : sig === "SIGTERM" ? 143 : 129);
-    });
+    };
+    process.on(sig, handler);
+    return [sig, handler];
+  });
+
+  function detachLifecycleHandlers() {
+    process.off("exit", onProcessExit);
+    for (const [sig, handler] of signalHandlers) process.off(sig, handler);
   }
 
   let selection: Selection | null = null;
@@ -163,6 +176,7 @@ async function main() {
 
   await ui.waitUntilExit();
   setAltScreen(false);
+  detachLifecycleHandlers();
 
   if (!selection) return 0;
 

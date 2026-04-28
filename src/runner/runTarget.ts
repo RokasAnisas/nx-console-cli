@@ -1,7 +1,6 @@
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 
+import { resolveNxBin } from "../workspace/nxBin.js";
 import type { Selection } from "../types.js";
 
 export interface RunOptions {
@@ -17,11 +16,7 @@ export function buildTargetSpec(selection: Selection): string {
   return `${selection.project}:${selection.target}`;
 }
 
-export function resolveNxBin(workspaceRoot: string): { cmd: string; args: string[] } {
-  const local = join(workspaceRoot, "node_modules", ".bin", "nx");
-  if (existsSync(local)) return { cmd: local, args: [] };
-  return { cmd: "npx", args: ["--no-install", "nx"] };
-}
+export { resolveNxBin };
 
 export function runTarget({ workspaceRoot, selection, dryRun }: RunOptions): Promise<number> {
   const { cmd, args: prefix } = resolveNxBin(workspaceRoot);
