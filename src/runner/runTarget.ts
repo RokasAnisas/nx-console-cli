@@ -19,7 +19,14 @@ export function buildTargetSpec(selection: Selection): string {
 export { resolveNxBin };
 
 export function runTarget({ workspaceRoot, selection, dryRun }: RunOptions): Promise<number> {
-  const { cmd, args: prefix } = resolveNxBin(workspaceRoot);
+  const nxBin = resolveNxBin(workspaceRoot);
+  if (!nxBin) {
+    process.stderr.write(
+      `nx is not installed in this workspace. Run \`npm install nx\` (or your package manager's equivalent) and try again.\n`,
+    );
+    return Promise.resolve(1);
+  }
+  const { cmd, args: prefix } = nxBin;
   const args = [...prefix, "run", buildTargetSpec(selection)];
 
   if (dryRun) {
