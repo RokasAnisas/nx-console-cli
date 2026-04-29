@@ -44,6 +44,7 @@ export async function loadProjects(
 
 async function loadViaNx(workspaceRoot: string, onProgress?: ProgressCallback): Promise<Project[]> {
   const nxBin = resolveNxBin(workspaceRoot);
+  if (!nxBin) return [];
   const namesJson = await runJson(
     nxBin.cmd,
     [...nxBin.args, "show", "projects", "--json"],
