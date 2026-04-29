@@ -5,19 +5,18 @@ const SHORTCUTS: ReadonlyArray<{ key: string; label: string }> = [
   { key: "↑↓", label: "navigate" },
   { key: "⇧↑↓", label: "skip" },
   { key: "←→", label: "expand" },
-  { key: "Enter", label: "run" },
-  { key: "Tab/⇧Tab", label: "switch tab" },
+  { key: "↵", label: "run" },
+  { key: "⇥", label: "switch tab" },
   { key: "⇧→", label: "favourite" },
   { key: "type", label: "filter" },
-  { key: "Esc", label: "clear" },
+  { key: "esc", label: "clear" },
   { key: "^C", label: "quit" },
 ];
 
 const COMPACT: ReadonlyArray<{ key: string; label: string }> = [
   { key: "↑↓", label: "nav" },
-  { key: "⇧↑↓", label: "skip" },
   { key: "↵", label: "run" },
-  { key: "⇥/⇧⇥", label: "tab" },
+  { key: "⇥", label: "tab" },
   { key: "⇧→", label: "★" },
   { key: "esc", label: "clear" },
   { key: "^C", label: "quit" },
@@ -28,15 +27,23 @@ interface Props {
 }
 
 export function Shortcuts({ terminalWidth }: Props) {
-  const items = terminalWidth < 80 ? COMPACT : SHORTCUTS;
+  const items = terminalWidth < 100 ? COMPACT : SHORTCUTS;
   return (
     <Box flexWrap="wrap">
-      {items.map((s) => (
-        <Box key={s.key} marginRight={2}>
-          <Text color="cyan" bold>
+      {items.map((s, i) => (
+        <Box key={s.key}>
+          {i > 0 && (
+            <Text color="gray" dimColor>
+              {"   "}
+            </Text>
+          )}
+          <Text color="white" bold>
             {s.key}
           </Text>
-          <Text color="gray"> {s.label}</Text>
+          <Text color="gray" dimColor>
+            {" "}
+            {s.label}
+          </Text>
         </Box>
       ))}
     </Box>
