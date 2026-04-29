@@ -17,6 +17,8 @@ const TABS: ReadonlyArray<Tab> = [
   { mode: "recent", label: "↻ recent", color: "green" },
 ];
 
+const PAD = 2;
+
 interface Props {
   mode: DashMode;
   searching: boolean;
@@ -24,28 +26,49 @@ interface Props {
 
 export function TabBar({ mode, searching }: Props) {
   return (
-    <Box>
-      {TABS.map((tab, i) => {
-        const isActive = tab.mode === mode;
-        return (
-          <React.Fragment key={tab.mode}>
-            {i > 0 && (
-              <Text color="gray" dimColor>
-                {"  "}
+    <Box flexDirection="column">
+      <Box>
+        {TABS.map((tab) => {
+          const isActive = tab.mode === mode;
+          const pad = " ".repeat(PAD);
+          if (isActive) {
+            return (
+              <Text key={tab.mode}>
+                {pad}
+                <Text bold color={tab.color} dimColor={searching}>
+                  {tab.label}
+                </Text>
+                {pad}
               </Text>
-            )}
-            {isActive ? (
-              <Text color={tab.color} bold underline dimColor={searching}>
-                {tab.label}
+            );
+          }
+          return (
+            <Text key={tab.mode} color="gray" dimColor>
+              {pad}
+              {tab.label}
+              {pad}
+            </Text>
+          );
+        })}
+      </Box>
+      <Box>
+        {TABS.map((tab) => {
+          const isActive = tab.mode === mode;
+          const width = tab.label.length + PAD * 2;
+          if (isActive) {
+            return (
+              <Text key={tab.mode} color={tab.color} dimColor={searching}>
+                {"━".repeat(width)}
               </Text>
-            ) : (
-              <Text color="gray" dimColor>
-                {tab.label}
-              </Text>
-            )}
-          </React.Fragment>
-        );
-      })}
+            );
+          }
+          return (
+            <Text key={tab.mode} color="gray" dimColor>
+              {"─".repeat(width)}
+            </Text>
+          );
+        })}
+      </Box>
     </Box>
   );
 }

@@ -12,14 +12,18 @@ export function SearchInput({ query, mode }: Props) {
   const searching = mode === "search";
   return (
     <Box>
-      <Text color={searching ? "magenta" : "gray"} bold={searching}>
-        ›{" "}
+      <Text color={searching ? "magentaBright" : "gray"} bold dimColor={!searching}>
+        {"❯ "}
       </Text>
       <Text>{query}</Text>
-      <Text color="gray" inverse={query.length === 0}>
-        {query.length === 0 ? " " : "_"}
+      <Text color={searching ? "magentaBright" : "gray"} inverse={query.length === 0}>
+        {query.length === 0 ? " " : "▍"}
       </Text>
-      {query.length === 0 && <Text color="gray"> type to filter…</Text>}
+      {query.length === 0 && (
+        <Text color="gray" dimColor>
+          {" type to filter…"}
+        </Text>
+      )}
     </Box>
   );
 }

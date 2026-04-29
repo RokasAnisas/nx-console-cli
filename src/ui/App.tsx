@@ -28,10 +28,11 @@ interface Props {
   onSelect: (selection: Selection) => void;
 }
 
-const HEADER_ROWS_FULL = 9;
-const HEADER_ROWS_WRAPPED = 10;
 const SHORTCUTS_NO_WRAP_WIDTH = 100;
 const SKIP_STEP = 5;
+const HEADER_ROWS = 6;
+const FOOTER_ROWS_FULL = 3;
+const FOOTER_ROWS_WRAPPED = 4;
 
 export function App({
   projects,
@@ -64,8 +65,8 @@ export function App({
 
   const rows = stdout?.rows ?? 24;
   const cols = stdout?.columns ?? 80;
-  const headerRows = cols >= SHORTCUTS_NO_WRAP_WIDTH ? HEADER_ROWS_FULL : HEADER_ROWS_WRAPPED;
-  const listHeight = Math.max(5, rows - headerRows - (warning ? 1 : 0));
+  const footerRows = cols >= SHORTCUTS_NO_WRAP_WIDTH ? FOOTER_ROWS_FULL : FOOTER_ROWS_WRAPPED;
+  const listHeight = Math.max(5, rows - HEADER_ROWS - footerRows - (warning ? 1 : 0));
 
   useEffect(() => {
     if (projects.length === 0) {
@@ -145,61 +146,111 @@ export function App({
   return (
     <Box flexDirection="column">
       <Logo version={version} />
-      <Box marginTop={1}>
-        <Shortcuts terminalWidth={cols} />
-      </Box>
+      <InfoLine
+        projectCount={projects.length}
+        source={source}
+        workspaceRoot={workspaceRoot}
+        refreshing={refreshing}
+      />
       {warning && (
-        <Text color="yellow" dimColor>
-          ⚠ {warning}
-        </Text>
+        <Box>
+          <Text color="yellow">{"  ⚠ "}</Text>
+          <Text color="yellow" dimColor>
+            {warning}
+          </Text>
+        </Box>
       )}
-      <Box marginTop={1}>
-        <InfoLine
-          projectCount={projects.length}
-          source={source}
-          workspaceRoot={workspaceRoot}
-          refreshing={refreshing}
-        />
-      </Box>
       <Box marginTop={1}>
         <TabBar mode={mode} searching={effectiveMode === "search"} />
       </Box>
       <SearchInput query={query} mode={effectiveMode} />
       <Box height={listHeight} flexDirection="column" flexShrink={0}>
         {showEmptyFavouritesHint ? (
-          <Box flexDirection="column">
-            <Text color="yellow">★ No favourites yet.</Text>
-            <Text color="gray" dimColor>
-              Press <Text color="cyan">Shift+→</Text> on a target to add it. Press{" "}
-              <Text color="cyan">Tab</Text> to switch back.
-            </Text>
-          </Box>
+          <EmptyHint
+            color="yellow"
+            glyph="★"
+            title="No favourites yet."
+            body={
+              <>
+                Press <Text color="cyan">Shift+→</Text> on a target to add it. Press{" "}
+                <Text color="cyan">Tab</Text> to switch back.
+              </>
+            }
+          />
         ) : showEmptyModifiedHint ? (
-          <Box flexDirection="column">
-            <Text color="cyan">● No modified projects.</Text>
-            <Text color="gray" dimColor>
-              Edit a file in a project, or check that <Text color="cyan">nx</Text> supports{" "}
-              <Text color="cyan">show projects --affected</Text>.
-            </Text>
-          </Box>
+          <EmptyHint
+            color="cyanBright"
+            glyph="●"
+            title="No modified projects."
+            body={
+              <>
+                Edit a file in a project, or check that <Text color="cyan">nx</Text> supports{" "}
+                <Text color="cyan">show projects --affected</Text>.
+              </>
+            }
+          />
         ) : showEmptyRecentHint ? (
-          <Box flexDirection="column">
-            <Text color="green">↻ No recent runs.</Text>
+          <EmptyHint
+            color="green"
+            glyph="↻"
+            title="No recent runs."
+            body={
+              <>
+                Press <Text color="cyan">Enter</Text> on a target to record it. Up to{" "}
+                <Text color="cyan">5</Text> recent targets are kept.
+              </>
+            }
+          />
+        ) : items.length === 0 ? (
+          <Box paddingLeft={2} paddingTop={1}>
             <Text color="gray" dimColor>
-              Press <Text color="cyan">Enter</Text> on a target to record it. Up to{" "}
-              <Text color="cyan">5</Text> recent targets are kept.
+              {projects.length === 0 ? "No projects found." : "No matches."}
             </Text>
           </Box>
-        ) : items.length === 0 ? (
-          <Text color="gray" dimColor>
-            {projects.length === 0 ? "No projects found." : "No matches."}
-          </Text>
         ) : effectiveMode === "tree" || effectiveMode === "modified" ? (
           <TreeView items={items} selectedIndex={selectedIndex} height={listHeight} />
         ) : (
           <FlatList items={items} selectedIndex={selectedIndex} height={listHeight} />
         )}
       </Box>
+      <Box marginTop={1} flexDirection="column">
+        <Rule width={cols} />
+        <Shortcuts terminalWidth={cols} />
+      </Box>
+    </Box>
+  );
+}
+
+function Rule({ width }: { width: number }) {
+  return (
+    <Text color="gray" dimColor>
+      {"─".repeat(Math.max(1, width))}
+    </Text>
+  );
+}
+
+function EmptyHint({
+  color,
+  glyph,
+  title,
+  body,
+}: {
+  color: string;
+  glyph: string;
+  title: string;
+  body: React.ReactNode;
+}) {
+  return (
+    <Box flexDirection="column" paddingLeft={2} paddingTop={1}>
+      <Box>
+        <Text color={color} bold>
+          {glyph}
+        </Text>
+        <Text color={color}> {title}</Text>
+      </Box>
+      <Text color="gray" dimColor>
+        {body}
+      </Text>
     </Box>
   );
 }
@@ -217,15 +268,21 @@ function InfoLine({
 }) {
   return (
     <Box>
-      <Text color="green">{projectCount}</Text>
-      <Text color="gray"> projects </Text>
       <Text color="gray" dimColor>
-        ·{" "}
+        {"  "}
+      </Text>
+      <Text color="green" bold>
+        {projectCount}
+      </Text>
+      <Text color="gray" dimColor>
+        {" projects"}
+      </Text>
+      <Text color="gray" dimColor>
+        {"   ·   "}
       </Text>
       <Text color="gray">{source === "nx" ? "via nx show" : "via project.json"}</Text>
       <Text color="gray" dimColor>
-        {" "}
-        ·{" "}
+        {"   ·   "}
       </Text>
       <Text color="gray" dimColor>
         {workspaceRoot}
@@ -240,13 +297,11 @@ function RefreshIndicator() {
   return (
     <>
       <Text color="gray" dimColor>
-        {" "}
-        ·{" "}
+        {"   ·   "}
       </Text>
       <Text color="cyan">{frame}</Text>
       <Text color="gray" dimColor>
-        {" "}
-        refreshing…
+        {" refreshing…"}
       </Text>
     </>
   );
