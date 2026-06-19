@@ -114,6 +114,26 @@ function mapNxProject(name: string, raw: string): Project | null {
   });
 }
 
+/**
+ * Distinguishes a real NX `project.json` from any other JSON file that happens
+ * to share the name (e.g. i18n/translation files). NX projects carry a
+ * recognizable fingerprint — the project schema reference or structural fields
+ * like `targets`/`projectType`/`sourceRoot`/`tags` — that translation files lack.
+ */
+export function isNxProjectJson(json: unknown): boolean {
+  if (typeof json !== "object" || json === null || Array.isArray(json)) return false;
+  const obj = json as Record<string, unknown>;
+  // Strongest signal: the NX project schema reference.
+  if (typeof obj.$schema === "string" && obj.$schema.includes("project-schema")) return true;
+  // Structural NX fingerprint — translation/i18n files have none of these.
+  const hasTargets =
+    typeof obj.targets === "object" && obj.targets !== null && !Array.isArray(obj.targets);
+  const hasProjectType = obj.projectType === "application" || obj.projectType === "library";
+  const hasSourceRoot = typeof obj.sourceRoot === "string";
+  const hasTags = Array.isArray(obj.tags);
+  return hasTargets || hasProjectType || hasSourceRoot || hasTags;
+}
+
 async function loadViaGlob(workspaceRoot: string): Promise<Project[]> {
   const matches = await glob(["**/project.json"], {
     cwd: workspaceRoot,
@@ -126,6 +146,7 @@ async function loadViaGlob(workspaceRoot: string): Promise<Project[]> {
     try {
       const raw = await readFile(file, "utf8");
       const json = JSON.parse(raw);
+      if (!isNxProjectJson(json)) continue; // skip non-NX project.json (e.g. i18n/translation files)
       const root = relative(workspaceRoot, dirname(file)) || ".";
       projects.push(
         normalizeProject({
