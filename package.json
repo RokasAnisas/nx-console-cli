@@ -1,6 +1,6 @@
 {
   "name": "nx-dash",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Terminal UI for browsing and running NX targets, like NX Console for the CLI.",
   "license": "MIT",
   "author": "Rokas Anisas",
@@ -36,7 +36,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "tsup src/__tests__/favourites.smoke.ts --format esm --target node18 --out-dir dist-test --silent --shims && node dist-test/favourites.smoke.js"
+    "test": "tsup src/__tests__/favourites.smoke.ts src/__tests__/loadProjects.smoke.ts --format esm --target node18 --out-dir dist-test --silent --shims && node dist-test/favourites.smoke.js && node dist-test/loadProjects.smoke.js"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
